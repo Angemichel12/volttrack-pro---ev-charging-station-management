@@ -7,7 +7,7 @@ import type {
 
 // Create an Axios instance
 const api: AxiosInstance = axios.create({
-  baseURL: "http://127.0.0.1:8000/",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "https://volttrack-r7sk.onrender.com/",
   timeout: 100000,
   headers: {
     "Content-Type": "application/json",
