@@ -1,0 +1,5 @@
+{
+  "name": "VoltTrack Pro - EV Charging Station Management",
+  "description": "A comprehensive, mobile-first management system for electric car charging stations featuring role-based access for Admins, Managers, and Staff with real-time session tracking and financial reporting.",
+  "requestFramePermissions": []
+}
