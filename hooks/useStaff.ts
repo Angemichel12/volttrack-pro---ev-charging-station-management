@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { successToast, errorToast } from "@/utils/toast";
 import api from "@/utils/axios";
+import { safeArray } from "@/utils/safeArray";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,9 +96,10 @@ export const useStaffDashboard = () => {
     setLoading(true);
     try {
       const res = await api.get("api/stations/dashboard/");
-      setData(res.data.data);
+      setData(res.data.data ?? null);
     } catch {
       errorToast("Failed to load dashboard");
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -119,7 +121,7 @@ export const useStationChargers = () => {
     try {
       const res = await api.get("api/stations/chargers/");
       const raw = res.data?.data ?? res.data;
-      setChargers(Array.isArray(raw) ? raw : []);
+      setChargers(safeArray<StationCharger>(raw));
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to load chargers");
       setChargers([]);
@@ -143,7 +145,7 @@ export const useShift = () => {
     setLoading(true);
     try {
       const res = await api.post("api/chargers/shifts/open/", { kwh_start, notes });
-      setOpenShift(res.data.data);
+      setOpenShift(res.data.data ?? null);
       successToast("Shift opened");
       return true;
     } catch (e: any) {
@@ -182,7 +184,7 @@ export const useSession = () => {
     setLoading(true);
     try {
       const res = await api.get("api/sessions/my-sessions/");
-      const all: Session[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      const all = safeArray<Session>(res.data?.data);
       setActiveSessions(all.filter(s => s.ended_at === null));
     } catch {
       errorToast("Failed to load sessions");
@@ -267,10 +269,12 @@ export const useStaffHistory = () => {
           api.get("api/sessions/my-sessions/"),
           api.get("api/chargers/shifts/history/"),
         ]);
-        setSessions(Array.isArray(sessionsRes.data?.data) ? sessionsRes.data.data : []);
-        setShifts(Array.isArray(shiftsRes.data?.data) ? shiftsRes.data.data : []);
+        setSessions(safeArray<Session>(sessionsRes.data?.data));
+        setShifts(safeArray<ShiftRecord>(shiftsRes.data?.data));
       } catch {
         errorToast("Failed to load history");
+        setSessions([]);
+        setShifts([]);
       } finally {
         setLoading(false);
       }
@@ -292,9 +296,16 @@ export const useStaffReports = () => {
       setLoading(true);
       try {
         const res = await api.get("api/stations/my-reports/");
-        setReports(res.data.data);
+        const data = res.data.data;
+        // Normalize nested arrays so .map() never crashes
+        setReports(data ? {
+          ...data,
+          charger_usage:  safeArray(data.charger_usage),
+          shift_history:  safeArray(data.shift_history),
+        } : null);
       } catch {
         errorToast("Failed to load reports");
+        setReports(null);
       } finally {
         setLoading(false);
       }

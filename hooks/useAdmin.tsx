@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { successToast, errorToast } from "@/utils/toast";
 import api from "@/utils/axios";
+import { safeArray } from "@/utils/safeArray";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,7 +21,7 @@ export interface Employee {
   id: number;
   name: string;
   email: string;
-  role: "staff";           // only staff now
+  role: "staff";
   station: number | null;
   is_active: boolean;
   created_at: string;
@@ -59,9 +60,10 @@ export const useAdminStations = () => {
     setLoading(true);
     try {
       const res = await api.get("api/stations/");
-      setStations(res.data.data);
+      setStations(safeArray<Station>(res.data.data));
     } catch {
       errorToast("Failed to load stations");
+      setStations([]);
     } finally {
       setLoading(false);
     }
@@ -127,11 +129,11 @@ export const useAdminEmployees = () => {
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
     try {
-      // role=staff only since manager role is removed
       const res = await api.get("api/admin/users/?role=staff");
-      setEmployees(res.data.data);
+      setEmployees(safeArray<Employee>(res.data.data));
     } catch {
       errorToast("Failed to load employees");
+      setEmployees([]);
     } finally {
       setLoading(false);
     }
@@ -183,18 +185,24 @@ export const useAdminReports = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchReports = async () => {
       setLoading(true);
       try {
         const res = await api.get("api/stations/reports/");
-        setReports(res.data.data);
+        // Normalize: ensure per_station is always an array
+        const data = res.data.data;
+        setReports(data ? {
+          ...data,
+          per_station: safeArray(data.per_station),
+        } : null);
       } catch {
         errorToast("Failed to load reports");
+        setReports(null);
       } finally {
         setLoading(false);
       }
     };
-    fetch();
+    fetchReports();
   }, []);
 
   return { reports, loading };
