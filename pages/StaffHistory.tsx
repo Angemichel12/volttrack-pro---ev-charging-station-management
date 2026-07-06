@@ -9,7 +9,7 @@ export const StaffHistory: React.FC = () => {
   const completed = sessions.filter(s => s.ended_at !== null);
   const totalEarnings = completed.reduce((sum, s) => sum + parseFloat(s.total_price || "0"), 0);
   const totalWatt = completed.reduce((sum, s) => sum + parseFloat(s.watt_consumed || "0"), 0);
-  const totalKwh = shifts.reduce((sum, s) => sum + parseFloat(s.kwh_consumed || "0"), 0);
+  const totalKwh = shifts.reduce((sum, s) => sum + parseFloat(s.total_kwatt_used_on_shift || "0"), 0);
 
   return (
     <div className="space-y-6">
@@ -23,7 +23,7 @@ export const StaffHistory: React.FC = () => {
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Earnings</p>
-          <p className="text-2xl font-bold text-blue-600">${totalEarnings.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-blue-600">Rwf {totalEarnings.toFixed(2)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Watts Consumed</p>
@@ -62,6 +62,7 @@ export const StaffHistory: React.FC = () => {
               <tr className="text-xs text-gray-400 uppercase tracking-wider">
                 <th className="pb-3 px-2">Plate</th>
                 <th className="pb-3 px-2">Charger</th>
+                <th className="pb-3 px-2">Battery</th>
                 <th className="pb-3 px-2">Watts</th>
                 <th className="pb-3 px-2">Price</th>
                 <th className="pb-3 px-2">Started</th>
@@ -70,15 +71,18 @@ export const StaffHistory: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {sessions.length === 0 && (
-                <tr><td colSpan={6} className="text-center py-8 text-gray-400">No sessions yet</td></tr>
+                <tr><td colSpan={7} className="text-center py-8 text-gray-400">No sessions yet</td></tr>
               )}
               {sessions.map(s => (
                 <tr key={s.id} className="text-sm">
                   <td className="py-3 px-2 font-medium">{s.car_plate}</td>
                   <td className="py-3 px-2 text-gray-500">{s.charger_name}</td>
+                  <td className="py-3 px-2 text-gray-500">
+                    {s.starting_car_percentage}% → {s.ending_car_percentage ?? "—"}%
+                  </td>
                   <td className="py-3 px-2">{s.watt_consumed ? `${s.watt_consumed}W` : "—"}</td>
                   <td className="py-3 px-2 font-semibold text-blue-600">
-                    {s.total_price ? `$${parseFloat(s.total_price).toFixed(2)}` : "—"}
+                    {s.total_price ? `Rwf ${parseFloat(s.total_price).toFixed(2)}` : "—"}
                   </td>
                   <td className="py-3 px-2 text-gray-400 text-xs">
                     {new Date(s.started_at).toLocaleString()}
@@ -104,15 +108,16 @@ export const StaffHistory: React.FC = () => {
                 <th className="pb-3 px-2">Station</th>
                 <th className="pb-3 px-2">Start</th>
                 <th className="pb-3 px-2">End</th>
-                <th className="pb-3 px-2">kWh Start</th>
-                <th className="pb-3 px-2">kWh End</th>
+                <th className="pb-3 px-2">Start Cashpower</th>
+                <th className="pb-3 px-2">End Cashpower</th>
+                <th className="pb-3 px-2">Money on Momo</th>
                 <th className="pb-3 px-2">Consumed</th>
                 <th className="pb-3 px-2">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {shifts.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-8 text-gray-400">No shifts yet</td></tr>
+                <tr><td colSpan={8} className="text-center py-8 text-gray-400">No shifts yet</td></tr>
               )}
               {shifts.map(sh => (
                 <tr key={sh.id} className="text-sm">
@@ -123,10 +128,11 @@ export const StaffHistory: React.FC = () => {
                   <td className="py-3 px-2 text-gray-400 text-xs">
                     {sh.shift_end ? new Date(sh.shift_end).toLocaleString() : "—"}
                   </td>
-                  <td className="py-3 px-2">{sh.kwh_start}</td>
-                  <td className="py-3 px-2">{sh.kwh_end ?? "—"}</td>
+                  <td className="py-3 px-2">{sh.start_kwatts_in_cashpower}</td>
+                  <td className="py-3 px-2">{sh.end_kwatts_in_cashpower ?? "—"}</td>
+                  <td className="py-3 px-2">{sh.money_on_momo ?? "—"}</td>
                   <td className="py-3 px-2 font-semibold text-blue-600">
-                    {sh.kwh_consumed ? `${sh.kwh_consumed} kWh` : "—"}
+                    {sh.total_kwatt_used_on_shift ? `${sh.total_kwatt_used_on_shift} kWh` : "—"}
                   </td>
                   <td className="py-3 px-2">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${

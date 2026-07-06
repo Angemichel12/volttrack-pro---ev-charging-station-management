@@ -5,17 +5,34 @@ import { safeArray } from "@/utils/safeArray";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export type PortSide = "left" | "right";
+
+export interface ChargerPort {
+  port: PortSide;
+  available: boolean;
+}
+
 export interface StationCharger {
   id: number;
   name: string;
   station: number;
   station_name: string;
+  ports: ChargerPort[];
+}
+
+export interface StationOption {
+  id: number;
+  name: string;
+  price_per_watt: string | null;
 }
 
 export interface Car {
   id: number;
   plate_number: string;
+  owner_name: string | null;
+  phone_number: string | null;
   optional_info: string | null;
+  unique_price?: string | null; // admin-only — absent from the staff response entirely
   created_at: string;
 }
 
@@ -25,11 +42,16 @@ export interface Session {
   station_name: string;
   charger: number;
   charger_name: string;
+  port: PortSide;
   staff: number;
+  shift: number;
   car: number;
   car_plate: string;
+  starting_car_percentage: number;
+  ending_car_percentage: number | null;
   watt_consumed: string | null;
   total_price: string | null;
+  duration: string | null;
   started_at: string;
   ended_at: string | null;
 }
@@ -42,12 +64,15 @@ export interface ShiftRecord {
   staff_name: string;
   shift_start: string;
   shift_end: string | null;
-  kwh_start: string;
-  kwh_end: string | null;
-  kwh_consumed: string | null;
+  start_kwatts_in_cashpower: string;
+  addition_kwatt_in_cashpower: string;
+  total_kwatt: string | null;
+  total_earned_money_on_shift: string | null;
+  total_kwatt_used_on_shift: string | null;
+  total_car_charged: number | null;
+  money_on_momo: string | null;
+  end_kwatts_in_cashpower: string | null;
   notes: string;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface StaffDashboard {
@@ -75,16 +100,31 @@ export interface StaffReport {
     sessions: number;
     earnings: string;
   }[];
-  shift_history: {
-    staff__id: number;
-    staff__name: string;
-    shift_start: string;
-    shift_end: string | null;
-    kwh_start: string;
-    kwh_end: string | null;
-    kwh_consumed: string | null;
-  }[];
+  shift_history: ShiftRecord[];
 }
+
+// ─── useStations (for picking a station when opening a shift) ─────────────────
+
+export const useStations = () => {
+  const [stations, setStations] = useState<StationOption[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchStations = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("api/stations/");
+      setStations(safeArray<StationOption>(res.data?.data));
+    } catch {
+      setStations([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchStations(); }, [fetchStations]);
+
+  return { stations, loading, refresh: fetchStations };
+};
 
 // ─── useStaffDashboard ────────────────────────────────────────────────────────
 
@@ -141,10 +181,18 @@ export const useShift = () => {
   const [openShift, setOpenShift] = useState<ShiftRecord | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const openShiftFn = async (kwh_start: string, notes?: string): Promise<boolean> => {
+  const openShiftFn = async (
+    station: number,
+    start_kwatts_in_cashpower: string,
+    notes?: string
+  ): Promise<boolean> => {
     setLoading(true);
     try {
-      const res = await api.post("api/chargers/shifts/open/", { kwh_start, notes });
+      const res = await api.post("api/chargers/shifts/open/", {
+        station,
+        start_kwatts_in_cashpower,
+        notes,
+      });
       setOpenShift(res.data.data ?? null);
       successToast("Shift opened");
       return true;
@@ -156,10 +204,30 @@ export const useShift = () => {
     }
   };
 
-  const closeShiftFn = async (shiftId: number, kwh_end: string, notes?: string): Promise<boolean> => {
+  const addCashpowerFn = async (shiftId: number, amount: string): Promise<boolean> => {
     setLoading(true);
     try {
-      await api.patch(`api/chargers/shifts/${shiftId}/close/`, { kwh_end, notes });
+      const res = await api.patch(`api/chargers/shifts/${shiftId}/add-cashpower/`, { amount });
+      setOpenShift(res.data.data ?? null);
+      successToast("Cashpower added");
+      return true;
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to add cashpower");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const closeShiftFn = async (
+    shiftId: number,
+    money_on_momo: string,
+    end_kwatts_in_cashpower: string,
+    notes?: string
+  ): Promise<boolean> => {
+    setLoading(true);
+    try {
+      await api.patch(`api/chargers/shifts/${shiftId}/close/`, { money_on_momo, end_kwatts_in_cashpower, notes });
       setOpenShift(null);
       successToast("Shift closed");
       return true;
@@ -171,7 +239,7 @@ export const useShift = () => {
     }
   };
 
-  return { openShift, setOpenShift, loading, openShiftFn, closeShiftFn };
+  return { openShift, setOpenShift, loading, openShiftFn, addCashpowerFn, closeShiftFn };
 };
 
 // ─── useSession ───────────────────────────────────────────────────────────────
@@ -196,9 +264,14 @@ export const useSession = () => {
 
   useEffect(() => { fetchMySessions(); }, [fetchMySessions]);
 
-  const startSession = async (charger_id: number, plate_number: string): Promise<boolean> => {
+  const startSession = async (
+    charger_id: number,
+    port: PortSide,
+    plate_number: string,
+    starting_car_percentage: number
+  ): Promise<boolean> => {
     try {
-      const res = await api.post("api/sessions/start/", { charger_id, plate_number });
+      const res = await api.post("api/sessions/start/", { charger_id, port, plate_number, starting_car_percentage });
       setActiveSessions(prev => [...prev, res.data.data]);
       successToast("Session started");
       return true;
@@ -208,9 +281,13 @@ export const useSession = () => {
     }
   };
 
-  const endSession = async (session_id: number, watt_consumed: string): Promise<boolean> => {
+  const endSession = async (
+    session_id: number,
+    watt_consumed: string,
+    ending_car_percentage: number
+  ): Promise<boolean> => {
     try {
-      const res = await api.post("api/sessions/end/", { session_id, watt_consumed });
+      const res = await api.post("api/sessions/end/", { session_id, watt_consumed, ending_car_percentage });
       setActiveSessions(prev => prev.filter(s => s.id !== session_id));
       successToast(`Session ended — Total: $${parseFloat(res.data.data.total_price).toFixed(2)}`);
       return true;
@@ -228,10 +305,15 @@ export const useSession = () => {
 export const useRegisterCar = () => {
   const [loading, setLoading] = useState(false);
 
-  const registerCar = async (plate_number: string, optional_info?: string): Promise<Car | null> => {
+  const registerCar = async (
+    plate_number: string,
+    owner_name?: string,
+    phone_number?: string,
+    optional_info?: string
+  ): Promise<Car | null> => {
     setLoading(true);
     try {
-      const res = await api.post("api/sessions/register-car/", { plate_number, optional_info });
+      const res = await api.post("api/sessions/register-car/", { plate_number, owner_name, phone_number, optional_info });
       successToast(res.data.message);
       return res.data.data as Car;
     } catch (e: any) {
@@ -242,12 +324,13 @@ export const useRegisterCar = () => {
     }
   };
 
-  const searchCar = async (plate: string): Promise<Car | null> => {
+  // Type-ahead: matches anywhere in the plate (case-insensitive), up to 20 results, [] if none.
+  const searchCar = async (plate: string): Promise<Car[]> => {
     try {
-      const res = await api.get(`api/sessions/search-car/?plate=${plate.toUpperCase()}`);
-      return res.data.data as Car;
+      const res = await api.get(`api/sessions/search-car/?plate=${encodeURIComponent(plate)}`);
+      return safeArray<Car>(res.data?.data);
     } catch {
-      return null;
+      return [];
     }
   };
 

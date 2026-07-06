@@ -13,12 +13,17 @@ const NAV_ITEMS: Record<string, NavItem[]> = {
     { label: 'Dashboard', path: '/admin/dashboard', icon: '📊' },
     { label: 'Stations',  path: '/admin/stations',  icon: '⛽' },
     { label: 'Employees', path: '/admin/employees', icon: '👥' },
+    { label: 'Cars',      path: '/admin/cars',      icon: '🚗' },
+    { label: 'Chargers',  path: '/admin/chargers',  icon: '🔋' },
     { label: 'Reports',   path: '/admin/reports',   icon: '📈' },
+    { label: 'Export',    path: '/admin/reports/export', icon: '📄' },
   ],
   staff: [
     { label: 'Dashboard', path: '/staff/dashboard', icon: '🔌' },
+    { label: 'Cars',      path: '/staff/cars',      icon: '🚗' },
     { label: 'History',   path: '/staff/history',   icon: '📜' },
     { label: 'Reports',   path: '/staff/reports',   icon: '📉' },
+    { label: 'Export',    path: '/staff/reports/export', icon: '📄' },
   ],
 };
 
@@ -66,7 +71,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <div className="p-4 border-t border-gray-200">
           <div className="px-4 py-2">
             <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+            <p className="text-xs text-gray-400 truncate">{user.phone_number}</p>
           </div>
           <button
             onClick={logout}
@@ -113,7 +118,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
           <div className="p-6 border-t border-gray-200">
             <p className="text-sm font-medium text-gray-900 mb-1">{user.name}</p>
-            <p className="text-xs text-gray-400 mb-4">{user.email}</p>
+            <p className="text-xs text-gray-400 mb-4">{user.phone_number}</p>
             <button
               onClick={logout}
               className="w-full flex items-center justify-center px-4 py-4 text-lg font-bold text-red-600 bg-red-50 rounded-xl"

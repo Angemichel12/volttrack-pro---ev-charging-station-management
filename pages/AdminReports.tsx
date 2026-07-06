@@ -43,7 +43,7 @@ export const AdminReports: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <StatCard
               label="Total Earnings"
-              value={`$${totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+              value={`Rwf ${totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
               icon="💰"
             />
             <StatCard
@@ -91,12 +91,12 @@ export const AdminReports: React.FC = () => {
                       <tr key={st.station__id} className="text-sm">
                         <td className="py-3 px-2 font-medium">{st.station__name}</td>
                         <td className="py-3 px-2 text-gray-500">
-                          {info?.price_per_watt ? `$${info.price_per_watt}/W` : "—"}
+                          {info?.price_per_watt ? `Rwf ${info.price_per_watt}/W` : "—"}
                         </td>
                         <td className="py-3 px-2">{st.sessions}</td>
                         <td className="py-3 px-2">{wattUsed.toLocaleString()}W</td>
                         <td className="py-3 px-2 font-semibold text-blue-600">
-                          ${earnings.toFixed(2)}
+                          Rwf {earnings.toFixed(2)}
                         </td>
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-2">
@@ -122,7 +122,7 @@ export const AdminReports: React.FC = () => {
                       <td className="pt-3 px-2">—</td>
                       <td className="pt-3 px-2">{totalSessions}</td>
                       <td className="pt-3 px-2">{totalWatt.toLocaleString()}W</td>
-                      <td className="pt-3 px-2 text-blue-600">${totalEarnings.toFixed(2)}</td>
+                      <td className="pt-3 px-2 text-blue-600">Rwf {totalEarnings.toFixed(2)}</td>
                       <td className="pt-3 px-2">100%</td>
                     </tr>
                   </tfoot>
@@ -141,7 +141,7 @@ export const AdminReports: React.FC = () => {
                     <div>
                       <h3 className="font-bold text-gray-900">{st.name}</h3>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        Rate: {st.price_per_watt ? `$${st.price_per_watt}/W` : "Not set"}
+                        Rate: {st.price_per_watt ? `Rwf ${st.price_per_watt}/W` : "Not set"}
                       </p>
                     </div>
                     <span className="text-xl">⛽</span>
@@ -149,7 +149,7 @@ export const AdminReports: React.FC = () => {
                   <div className="space-y-2 text-sm">
                     {[
                       ["Sessions",  data?.sessions   ?? 0],
-                      ["Earnings",  data ? `$${parseFloat(data.earnings || "0").toFixed(2)}` : "$0.00"],
+                      ["Earnings",  data ? `Rwf ${parseFloat(data.earnings || "0").toFixed(2)}` : "Rwf 0.00"],
                       ["Watts",     data ? `${parseFloat(data.watt_used || "0").toLocaleString()}W` : "0W"],
                     ].map(([label, val]) => (
                       <div key={String(label)} className="flex justify-between py-1.5 border-b border-gray-50 last:border-0">

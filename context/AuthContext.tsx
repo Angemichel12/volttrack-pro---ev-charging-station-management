@@ -9,7 +9,7 @@ import api from "@/utils/axios";
 export interface AuthUser {
   id: number;
   name: string;
-  email: string;
+  phone_number: string;
   role: "admin" | "staff";   // manager removed
   station: number | null;    // staff are assigned to a station, admin is null
 }

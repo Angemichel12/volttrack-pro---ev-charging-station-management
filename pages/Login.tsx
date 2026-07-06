@@ -4,19 +4,19 @@ import { useLogin } from "../hooks/useLogin";
 
 export const Login: React.FC = () => {
   const { login, loading } = useLogin();
-  const [email, setEmail] = useState("");
+  const [phone_number, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    login({ email, password });
+    login({ phone_number, password });
   };
 
   const quickLogin = (role: "admin" | "manager" | "staff") => {
     const credentials = {
-      admin:   { email: "admin@volttrack.com",   password: "admin123" },
-      manager: { email: "manager@volttrack.com", password: "manager123" },
-      staff:   { email: "staff@volttrack.com",   password: "staff123" },
+      admin:   { phone_number: "0700000001",   password: "admin123" },
+      manager: { phone_number: "0700000002", password: "manager123" },
+      staff:   { phone_number: "0700000003",   password: "staff123" },
     };
     login(credentials[role]);
   };
@@ -35,11 +35,11 @@ export const Login: React.FC = () => {
         <Card>
           <form onSubmit={handleLogin} className="space-y-5">
             <Input
-              label="Email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              label="Phone Number"
+              type="tel"
+              placeholder="0700000000"
+              value={phone_number}
+              onChange={(e) => setPhoneNumber(e.target.value)}
               autoFocus
               required
             />

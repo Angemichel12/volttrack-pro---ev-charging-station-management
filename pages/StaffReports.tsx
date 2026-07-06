@@ -12,7 +12,7 @@ export const StaffReports: React.FC = () => {
 
   const closedShifts = shifts.filter(s => s.shift_end !== null);
   const totalKwh = closedShifts.reduce(
-    (sum, s) => sum + parseFloat(s.kwh_consumed || "0"), 0
+    (sum, s) => sum + parseFloat(s.total_kwatt_used_on_shift || "0"), 0
   );
 
   return (
@@ -29,7 +29,7 @@ export const StaffReports: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
               label="Total Earnings"
-              value={`$${parseFloat(summary?.total_earnings || "0").toFixed(2)}`}
+              value={`Rwf ${parseFloat(summary?.total_earnings || "0").toFixed(2)}`}
               icon="💵"
             />
             <StatCard
@@ -89,7 +89,7 @@ export const StaffReports: React.FC = () => {
                         Total Earnings
                       </p>
                       <p className="text-2xl font-bold text-blue-600">
-                        ${parseFloat(c.earnings || "0").toFixed(2)}
+                        Rwf {parseFloat(c.earnings || "0").toFixed(2)}
                       </p>
                     </div>
                   </Card>
@@ -121,7 +121,7 @@ export const StaffReports: React.FC = () => {
                               <td className="py-3 px-2 font-medium">{c.charger__name}</td>
                               <td className="py-3 px-2">{c.sessions}</td>
                               <td className="py-3 px-2 font-semibold text-blue-600">
-                                ${earnings.toFixed(2)}
+                                Rwf {earnings.toFixed(2)}
                               </td>
                               <td className="py-3 px-2">
                                 <div className="flex items-center gap-2">
@@ -150,11 +150,12 @@ export const StaffReports: React.FC = () => {
                 <table className="w-full">
                   <thead className="text-left border-b border-gray-100">
                     <tr className="text-xs text-gray-400 uppercase tracking-wider">
-                      <th className="pb-3 px-2">Staff</th>
+                      <th className="pb-3 px-2">Station</th>
                       <th className="pb-3 px-2">Shift Start</th>
                       <th className="pb-3 px-2">Shift End</th>
-                      <th className="pb-3 px-2">kWh Start</th>
-                      <th className="pb-3 px-2">kWh End</th>
+                      <th className="pb-3 px-2">Start Cashpower</th>
+                      <th className="pb-3 px-2">End Cashpower</th>
+                      <th className="pb-3 px-2">Money on Momo</th>
                       <th className="pb-3 px-2">Consumed</th>
                       <th className="pb-3 px-2">Status</th>
                     </tr>
@@ -162,24 +163,25 @@ export const StaffReports: React.FC = () => {
                   <tbody className="divide-y divide-gray-50">
                     {shifts.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="text-center py-8 text-gray-400">
+                        <td colSpan={8} className="text-center py-8 text-gray-400">
                           No shifts yet
                         </td>
                       </tr>
                     )}
-                    {shifts.map((sh: any, i: number) => (
-                      <tr key={i} className="text-sm">
-                        <td className="py-3 px-2 font-medium">{sh.staff__name}</td>
+                    {shifts.map((sh) => (
+                      <tr key={sh.id} className="text-sm">
+                        <td className="py-3 px-2 font-medium">{sh.station_name}</td>
                         <td className="py-3 px-2 text-gray-400 text-xs">
                           {new Date(sh.shift_start).toLocaleString()}
                         </td>
                         <td className="py-3 px-2 text-gray-400 text-xs">
                           {sh.shift_end ? new Date(sh.shift_end).toLocaleString() : "—"}
                         </td>
-                        <td className="py-3 px-2">{sh.kwh_start}</td>
-                        <td className="py-3 px-2">{sh.kwh_end ?? "—"}</td>
+                        <td className="py-3 px-2">{sh.start_kwatts_in_cashpower}</td>
+                        <td className="py-3 px-2">{sh.end_kwatts_in_cashpower ?? "—"}</td>
+                        <td className="py-3 px-2">{sh.money_on_momo ?? "—"}</td>
                         <td className="py-3 px-2 font-semibold text-blue-600">
-                          {sh.kwh_consumed ? `${sh.kwh_consumed} kWh` : "—"}
+                          {sh.total_kwatt_used_on_shift ? `${sh.total_kwatt_used_on_shift} kWh` : "—"}
                         </td>
                         <td className="py-3 px-2">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${

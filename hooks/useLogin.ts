@@ -4,7 +4,7 @@ import { successToast, errorToast } from "@/utils/toast";
 import api from "@/utils/axios";
 
 interface LoginPayload {
-  email: string;
+  phone_number: string;
   password: string;
 }
 
@@ -14,7 +14,7 @@ interface LoginResponse {
   data: {
     id: number;
     name: string;
-    email: string;
+    phone_number: string;
     role: "admin" | "staff";
     station: number | null;
     access: string;
@@ -37,7 +37,7 @@ export const useLogin = () => {
       localStorage.setItem("user", JSON.stringify({
         id: data.id,
         name: data.name,
-        email: data.email,
+        phone_number: data.phone_number,
         role: data.role,
         station: data.station,
       }));

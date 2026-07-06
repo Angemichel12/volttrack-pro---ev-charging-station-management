@@ -20,19 +20,37 @@ export interface StationPayload {
 export interface Employee {
   id: number;
   name: string;
-  email: string;
+  phone_number: string;
   role: "staff";
-  station: number | null;
   is_active: boolean;
   created_at: string;
 }
 
 export interface EmployeePayload {
   name: string;
-  email: string;
+  phone_number: string;
   password: string;
   role: "staff";
-  station?: number | null;
+}
+
+export type PortSide = "left" | "right";
+
+export interface ChargerPort {
+  port: PortSide;
+  available: boolean;
+}
+
+export interface Charger {
+  id: number;
+  name: string;
+  station: number;
+  station_name: string;
+  ports: ChargerPort[];
+}
+
+export interface ChargerPayload {
+  name: string;
+  station: number;
 }
 
 export interface AdminReport {
@@ -176,6 +194,52 @@ export const useAdminEmployees = () => {
   };
 
   return { employees, loading, fetchEmployees, createEmployee, updateEmployee, deleteEmployee };
+};
+
+// ─── useAdminChargers ─────────────────────────────────────────────────────────
+
+export const useAdminChargers = () => {
+  const [chargers, setChargers] = useState<Charger[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchChargers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("api/chargers/");
+      setChargers(safeArray<Charger>(res.data?.data));
+    } catch {
+      errorToast("Failed to load chargers");
+      setChargers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchChargers(); }, [fetchChargers]);
+
+  const createCharger = async (payload: ChargerPayload): Promise<boolean> => {
+    try {
+      const res = await api.post("api/chargers/", payload);
+      setChargers(prev => [...prev, res.data.data]);
+      successToast("Charger created");
+      return true;
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to create charger");
+      return false;
+    }
+  };
+
+  const deleteCharger = async (id: number): Promise<void> => {
+    try {
+      await api.delete(`api/chargers/${id}/`);
+      setChargers(prev => prev.filter(c => c.id !== id));
+      successToast("Charger deleted");
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to delete charger");
+    }
+  };
+
+  return { chargers, loading, fetchChargers, createCharger, deleteCharger };
 };
 
 // ─── useAdminReports ──────────────────────────────────────────────────────────
