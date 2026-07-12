@@ -1,10 +1,21 @@
 import React, { useState } from "react";
-import { Card, StatCard } from "../components/Shared";
+import { Card, StatCard, PageHeader, StatSkeleton, TableSkeleton } from "../components/Shared";
+import { IconBolt, IconMoney, IconCharger, IconShift } from "../components/Icons";
+import { rwf, kw } from "../utils/format";
 import { useStaffReports } from "../hooks/useStaff";
+import { ReportPanel } from "./DetailedReports";
+
+type Tab = "chargers" | "sessions" | "shifts";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "chargers", label: "Charger Usage" },
+  { key: "sessions", label: "Sessions" },
+  { key: "shifts", label: "Shifts" },
+];
 
 export const StaffReports: React.FC = () => {
   const { reports, loading } = useStaffReports();
-  const [tab, setTab] = useState<"chargers" | "shifts">("chargers");
+  const [tab, setTab] = useState<Tab>("chargers");
 
   const summary   = reports?.summary;
   const chargers  = reports?.charger_usage  ?? [];
@@ -19,59 +30,71 @@ export const StaffReports: React.FC = () => {
     <div className="space-y-6">
 
       {/* ── Header ───────────────────────────────────────────────── */}
-      <h2 className="text-2xl font-bold">My Station Reports</h2>
+      <PageHeader
+        title="My Reports"
+        subtitle="Review your work, filter the details, and download Excel or PDF"
+      />
 
       {loading ? (
-        <div className="text-center py-20 text-gray-400">Loading reports...</div>
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StatSkeleton /><StatSkeleton /><StatSkeleton /><StatSkeleton />
+          </div>
+          <Card><TableSkeleton rows={5} cols={4} /></Card>
+        </>
       ) : (
         <>
           {/* ── Summary Stats ─────────────────────────────────────── */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <StatCard
-              label="Total Earnings"
-              value={`Rwf ${parseFloat(summary?.total_earnings || "0").toFixed(2)}`}
-              icon="💵"
+              label="Total earnings"
+              value={rwf(summary?.total_earnings)}
+              icon={<IconMoney className="w-5 h-5" />}
+              tone="green"
             />
             <StatCard
-              label="Watts Consumed"
-              value={`${parseFloat(summary?.total_watt || "0").toLocaleString()}W`}
-              icon="⚡"
+              label="kW consumed"
+              value={kw(summary?.total_watt)}
+              icon={<IconBolt className="w-5 h-5" />}
             />
             <StatCard
-              label="Total Sessions"
+              label="Total sessions"
               value={summary?.total_sessions ?? 0}
-              icon="🔌"
+              icon={<IconCharger className="w-5 h-5" />}
             />
             <StatCard
-              label="Total kWh (Shifts)"
+              label="Total kWh (shifts)"
               value={`${totalKwh.toFixed(2)} kWh`}
-              icon="📊"
+              icon={<IconShift className="w-5 h-5" />}
             />
           </div>
 
           {/* ── Tabs ──────────────────────────────────────────────── */}
-          <div className="flex gap-2 border-b border-gray-200">
-            {(["chargers", "shifts"] as const).map(t => (
+          <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
+            {TABS.map(t => (
               <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors ${
-                  tab === t
-                    ? "border-blue-600 text-blue-600"
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`px-4 py-2.5 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors ${
+                  tab === t.key
+                    ? "border-green-600 text-green-700"
                     : "border-transparent text-gray-400 hover:text-gray-600"
                 }`}
               >
-                {t === "chargers" ? "Charger Usage" : "Shift History"}
+                {t.label}
               </button>
             ))}
           </div>
 
-          {tab === "chargers" ? (
-            // ── Charger Usage ─────────────────────────────────────
+          {/* ── Sessions / Shifts — filterable data + downloads ───── */}
+          {tab !== "chargers" && <ReportPanel type={tab} isAdmin={false} />}
+
+          {/* ── Charger Usage ─────────────────────────────────────── */}
+          {tab === "chargers" && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {chargers.length === 0 && (
-                  <div className="col-span-3 text-center py-12 border border-dashed rounded-xl text-gray-400">
+                  <div className="col-span-full text-center py-12 border border-dashed rounded-2xl text-gray-400">
                     No charger data yet
                   </div>
                 )}
@@ -82,14 +105,16 @@ export const StaffReports: React.FC = () => {
                         <h3 className="font-bold text-gray-900">{c.charger__name}</h3>
                         <p className="text-xs text-gray-400 mt-0.5">{c.sessions} sessions</p>
                       </div>
-                      <span className="text-xl">🔌</span>
+                      <span className="w-9 h-9 rounded-xl bg-green-50 text-green-700 flex items-center justify-center">
+                        <IconCharger className="w-5 h-5" />
+                      </span>
                     </div>
                     <div className="mt-2">
                       <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">
                         Total Earnings
                       </p>
-                      <p className="text-2xl font-bold text-blue-600">
-                        Rwf {parseFloat(c.earnings || "0").toFixed(2)}
+                      <p className="text-2xl font-bold text-green-700">
+                        {rwf(c.earnings)}
                       </p>
                     </div>
                   </Card>
@@ -100,7 +125,7 @@ export const StaffReports: React.FC = () => {
               {chargers.length > 0 && (
                 <Card title="Charger Summary">
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full min-w-[480px]">
                       <thead className="text-left border-b border-gray-100">
                         <tr className="text-xs text-gray-400 uppercase tracking-wider">
                           <th className="pb-3 px-2">Charger</th>
@@ -120,14 +145,14 @@ export const StaffReports: React.FC = () => {
                             <tr key={c.charger__id} className="text-sm">
                               <td className="py-3 px-2 font-medium">{c.charger__name}</td>
                               <td className="py-3 px-2">{c.sessions}</td>
-                              <td className="py-3 px-2 font-semibold text-blue-600">
-                                Rwf {earnings.toFixed(2)}
+                              <td className="py-3 px-2 font-semibold text-green-700">
+                                {rwf(earnings)}
                               </td>
                               <td className="py-3 px-2">
                                 <div className="flex items-center gap-2">
                                   <div className="flex-1 bg-gray-100 rounded-full h-1.5 w-20">
                                     <div
-                                      className="bg-blue-500 h-1.5 rounded-full"
+                                      className="bg-green-600 h-1.5 rounded-full"
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
@@ -143,72 +168,6 @@ export const StaffReports: React.FC = () => {
                 </Card>
               )}
             </>
-          ) : (
-            // ── Shift History ─────────────────────────────────────
-            <Card title="Shift History">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="text-left border-b border-gray-100">
-                    <tr className="text-xs text-gray-400 uppercase tracking-wider">
-                      <th className="pb-3 px-2">Station</th>
-                      <th className="pb-3 px-2">Shift Start</th>
-                      <th className="pb-3 px-2">Shift End</th>
-                      <th className="pb-3 px-2">Start Cashpower</th>
-                      <th className="pb-3 px-2">End Cashpower</th>
-                      <th className="pb-3 px-2">Money on Momo</th>
-                      <th className="pb-3 px-2">Consumed</th>
-                      <th className="pb-3 px-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {shifts.length === 0 && (
-                      <tr>
-                        <td colSpan={8} className="text-center py-8 text-gray-400">
-                          No shifts yet
-                        </td>
-                      </tr>
-                    )}
-                    {shifts.map((sh) => (
-                      <tr key={sh.id} className="text-sm">
-                        <td className="py-3 px-2 font-medium">{sh.station_name}</td>
-                        <td className="py-3 px-2 text-gray-400 text-xs">
-                          {new Date(sh.shift_start).toLocaleString()}
-                        </td>
-                        <td className="py-3 px-2 text-gray-400 text-xs">
-                          {sh.shift_end ? new Date(sh.shift_end).toLocaleString() : "—"}
-                        </td>
-                        <td className="py-3 px-2">{sh.start_kwatts_in_cashpower}</td>
-                        <td className="py-3 px-2">{sh.end_kwatts_in_cashpower ?? "—"}</td>
-                        <td className="py-3 px-2">{sh.money_on_momo ?? "—"}</td>
-                        <td className="py-3 px-2 font-semibold text-blue-600">
-                          {sh.total_kwatt_used_on_shift ? `${sh.total_kwatt_used_on_shift} kWh` : "—"}
-                        </td>
-                        <td className="py-3 px-2">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            sh.shift_end
-                              ? "bg-green-50 text-green-600"
-                              : "bg-orange-50 text-orange-500 animate-pulse"
-                          }`}>
-                            {sh.shift_end ? "Closed" : "Open"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-
-                  {/* Totals row */}
-                  {closedShifts.length > 0 && (
-                    <tfoot className="border-t-2 border-gray-200">
-                      <tr className="text-sm font-bold">
-                        <td className="pt-3 px-2" colSpan={5}>Total kWh Consumed</td>
-                        <td className="pt-3 px-2 text-blue-600">{totalKwh.toFixed(2)} kWh</td>
-                        <td />
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
-              </div>
-            </Card>
           )}
         </>
       )}

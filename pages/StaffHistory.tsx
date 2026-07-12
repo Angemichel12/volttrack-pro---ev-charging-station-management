@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { Card } from "../components/Shared";
+import { Card, PageHeader, StatCard, TableSkeleton } from "../components/Shared";
+import { IconBolt, IconMoney, IconCharger, IconShift } from "../components/Icons";
+import { rwf, kw } from "../utils/format";
 import { useStaffHistory } from "../hooks/useStaff";
 
 export const StaffHistory: React.FC = () => {
@@ -13,26 +15,14 @@ export const StaffHistory: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">My History</h2>
+      <PageHeader title="My History" subtitle="Everything you've charged and every shift you've worked" />
 
       {/* ── Summary ───────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Sessions</p>
-          <p className="text-2xl font-bold">{completed.length}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Earnings</p>
-          <p className="text-2xl font-bold text-blue-600">Rwf {totalEarnings.toFixed(2)}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Watts Consumed</p>
-          <p className="text-2xl font-bold">{totalWatt.toLocaleString()}W</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">kWh (shifts)</p>
-          <p className="text-2xl font-bold">{totalKwh.toFixed(2)} kWh</p>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard label="Sessions" value={completed.length} icon={<IconCharger className="w-5 h-5" />} />
+        <StatCard label="Earnings" value={rwf(totalEarnings)} icon={<IconMoney className="w-5 h-5" />} tone="green" />
+        <StatCard label="kW consumed" value={kw(totalWatt)} icon={<IconBolt className="w-5 h-5" />} />
+        <StatCard label="kWh (shifts)" value={`${totalKwh.toFixed(2)} kWh`} icon={<IconShift className="w-5 h-5" />} />
       </div>
 
       {/* ── Tabs ──────────────────────────────────────────────────── */}
@@ -43,7 +33,7 @@ export const StaffHistory: React.FC = () => {
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors ${
               tab === t
-                ? "border-blue-600 text-blue-600"
+                ? "border-green-600 text-green-700"
                 : "border-transparent text-gray-400 hover:text-gray-600"
             }`}
           >
@@ -53,17 +43,18 @@ export const StaffHistory: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading history...</div>
+        <Card><TableSkeleton rows={6} cols={tab === "sessions" ? 7 : 8} /></Card>
       ) : tab === "sessions" ? (
         // ── Sessions Table ────────────────────────────────────────
         <Card>
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px]">
             <thead className="text-left border-b border-gray-100">
               <tr className="text-xs text-gray-400 uppercase tracking-wider">
                 <th className="pb-3 px-2">Plate</th>
                 <th className="pb-3 px-2">Charger</th>
                 <th className="pb-3 px-2">Battery</th>
-                <th className="pb-3 px-2">Watts</th>
+                <th className="pb-3 px-2">kW</th>
                 <th className="pb-3 px-2">Price</th>
                 <th className="pb-3 px-2">Started</th>
                 <th className="pb-3 px-2">Status</th>
@@ -80,16 +71,16 @@ export const StaffHistory: React.FC = () => {
                   <td className="py-3 px-2 text-gray-500">
                     {s.starting_car_percentage}% → {s.ending_car_percentage ?? "—"}%
                   </td>
-                  <td className="py-3 px-2">{s.watt_consumed ? `${s.watt_consumed}W` : "—"}</td>
-                  <td className="py-3 px-2 font-semibold text-blue-600">
-                    {s.total_price ? `Rwf ${parseFloat(s.total_price).toFixed(2)}` : "—"}
+                  <td className="py-3 px-2">{s.watt_consumed ? kw(s.watt_consumed) : "—"}</td>
+                  <td className="py-3 px-2 font-semibold text-green-700">
+                    {s.total_price ? rwf(s.total_price) : "—"}
                   </td>
                   <td className="py-3 px-2 text-gray-400 text-xs">
                     {new Date(s.started_at).toLocaleString()}
                   </td>
                   <td className="py-3 px-2">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      s.ended_at ? "bg-green-50 text-green-600" : "bg-blue-50 text-blue-600 animate-pulse"
+                      s.ended_at ? "bg-gray-100 text-gray-500" : "bg-green-50 text-green-700 animate-pulse"
                     }`}>
                       {s.ended_at ? "Done" : "Active"}
                     </span>
@@ -98,11 +89,13 @@ export const StaffHistory: React.FC = () => {
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       ) : (
         // ── Shifts Table ──────────────────────────────────────────
         <Card>
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px]">
             <thead className="text-left border-b border-gray-100">
               <tr className="text-xs text-gray-400 uppercase tracking-wider">
                 <th className="pb-3 px-2">Station</th>
@@ -131,7 +124,7 @@ export const StaffHistory: React.FC = () => {
                   <td className="py-3 px-2">{sh.start_kwatts_in_cashpower}</td>
                   <td className="py-3 px-2">{sh.end_kwatts_in_cashpower ?? "—"}</td>
                   <td className="py-3 px-2">{sh.money_on_momo ?? "—"}</td>
-                  <td className="py-3 px-2 font-semibold text-blue-600">
+                  <td className="py-3 px-2 font-semibold text-green-700">
                     {sh.total_kwatt_used_on_shift ? `${sh.total_kwatt_used_on_shift} kWh` : "—"}
                   </td>
                   <td className="py-3 px-2">
@@ -145,6 +138,7 @@ export const StaffHistory: React.FC = () => {
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
     </div>

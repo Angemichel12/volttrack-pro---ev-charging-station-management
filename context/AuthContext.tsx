@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { successToast } from "@/utils/toast";
+import { successToast, errorToast } from "@/utils/toast";
 import api from "@/utils/axios";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -51,9 +51,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
-      await api.post("api/auth/logout/");
-    } catch (_) {
-      // ignore logout API errors — clear locally regardless
+      await api.post("api/auth/logout/", { refresh: localStorage.getItem("refresh") });
+    } catch (e: any) {
+      // Staff can't log out with an open shift — the backend blocks it (400).
+      // Keep the session and send them to the shift page to close it first.
+      if (e?.response?.status === 400) {
+        errorToast(e?.response?.data?.message || "End your shift before logging out.");
+        if (user?.role === "staff") navigate("/staff/shift");
+        return;
+      }
+      // Any other error (expired token etc.) — clear locally regardless.
     }
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");

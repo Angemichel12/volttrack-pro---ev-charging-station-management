@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Card, Button, Input } from "../components/Shared";
+import { Card, Button, Input, PageHeader, TableSkeleton } from "../components/Shared";
+import { IconPlus, IconTrash } from "../components/Icons";
 import { useAuth } from "../context/AuthContext";
 import { useCars, type CarPayload } from "../hooks/useCars";
 
@@ -46,10 +47,11 @@ export const CarManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Cars</h2>
-        <Button onClick={() => setIsAdding(true)}>Add Car</Button>
-      </div>
+      <PageHeader
+        title="Cars"
+        subtitle="Registered vehicles and their owners"
+        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Car</Button>}
+      />
 
       {isAdding && (
         <Card title="New Car">
@@ -72,7 +74,7 @@ export const CarManagement: React.FC = () => {
             />
             {isAdmin && (
               <Input
-                label="Unique Price/Watt in Rwf (optional)"
+                label="Unique Price/kW in Rwf (optional)"
                 type="number"
                 step="0.0001"
                 placeholder="Overrides station rate"
@@ -98,7 +100,7 @@ export const CarManagement: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading cars...</div>
+        <Card><TableSkeleton rows={6} cols={isAdmin ? 6 : 4} /></Card>
       ) : (
         <Card>
           <div className="overflow-x-auto">
@@ -109,7 +111,7 @@ export const CarManagement: React.FC = () => {
                   <th className="pb-3 px-2">Owner</th>
                   <th className="pb-3 px-2">Phone</th>
                   <th className="pb-3 px-2">Notes</th>
-                  {isAdmin && <th className="pb-3 px-2">Unique Price/Watt (Rwf)</th>}
+                  {isAdmin && <th className="pb-3 px-2">Unique Price/kW (Rwf)</th>}
                   {isAdmin && <th className="pb-3 px-2"></th>}
                 </tr>
               </thead>
@@ -129,12 +131,12 @@ export const CarManagement: React.FC = () => {
                             placeholder={c.unique_price ?? "Not set"}
                             value={priceInputs[c.id] ?? ""}
                             onChange={e => setPriceInputs(prev => ({ ...prev, [c.id]: e.target.value }))}
-                            className="w-28 px-2 py-1 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-28 px-2 py-1 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-green-500"
                           />
                           <button
                             onClick={() => handleSetPrice(c.id)}
                             disabled={!priceInputs[c.id]}
-                            className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-40 disabled:no-underline shrink-0"
+                            className="text-xs font-medium text-green-700 hover:underline disabled:opacity-40 disabled:no-underline shrink-0"
                           >
                             Set
                           </button>
@@ -145,9 +147,10 @@ export const CarManagement: React.FC = () => {
                       <td className="py-3 px-2 text-right">
                         <button
                           onClick={() => deleteCar(c.id)}
-                          className="text-xs text-red-500 hover:underline"
+                          aria-label="Remove car"
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
-                          Remove
+                          <IconTrash className="w-4 h-4" />
                         </button>
                       </td>
                     )}

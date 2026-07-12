@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Card, Button, Input } from "../components/Shared";
+import { Card, Button, Input, Select, PageHeader, EmptyState, Loading, Badge, TableSkeleton } from "../components/Shared";
+import { IconStation, IconUsers, IconCharger, IconPlus, IconTrash } from "../components/Icons";
 import { useAdminStations, useAdminEmployees, useAdminChargers, type StationPayload, type EmployeePayload, type ChargerPayload } from "../hooks/useAdmin";
 
 // ─── AdminStations ────────────────────────────────────────────────────────────
@@ -31,10 +32,11 @@ export const AdminStations: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Manage Stations</h2>
-        <Button onClick={() => setIsAdding(true)}>Add Station</Button>
-      </div>
+      <PageHeader
+        title="Stations"
+        subtitle="Create stations and manage their charging rates"
+        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Station</Button>}
+      />
 
       {isAdding && (
         <Card title="New Station">
@@ -46,7 +48,7 @@ export const AdminStations: React.FC = () => {
               placeholder="e.g. Station Alpha"
             />
             <Input
-              label="Price per Watt (optional)"
+              label="Price per kW (optional)"
               type="number"
               step="0.0001"
               value={form.price_per_watt || ""}
@@ -64,7 +66,7 @@ export const AdminStations: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading stations...</div>
+        <Loading label="Loading stations..." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {stations.map(st => (
@@ -73,7 +75,7 @@ export const AdminStations: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-bold">{st.name}</h3>
                   <p className="text-sm text-gray-500">
-                    Rate: {st.price_per_watt ? `Rwf ${st.price_per_watt}/W` : "Not set"}
+                    Rate: {st.price_per_watt ? `Rwf ${st.price_per_watt}/kW` : "Not set"}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
                     Created: {new Date(st.created_at).toLocaleDateString()}
@@ -81,16 +83,17 @@ export const AdminStations: React.FC = () => {
                 </div>
                 <button
                   onClick={() => deleteStation(st.id)}
-                  className="text-xs text-red-500 hover:underline"
+                  aria-label="Delete station"
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
-                  Delete
+                  <IconTrash className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Inline price setter per station */}
               <div className="flex gap-2 items-end pt-3 border-t border-gray-100">
                 <Input
-                  label="Update Rate (Rwf/W)"
+                  label="Update Rate (Rwf/kW)"
                   type="number"
                   step="0.0001"
                   placeholder="e.g. 0.0050"
@@ -109,8 +112,13 @@ export const AdminStations: React.FC = () => {
             </Card>
           ))}
           {stations.length === 0 && (
-            <div className="col-span-2 text-center py-12 text-gray-400 border border-dashed rounded-xl">
-              No stations yet. Add one above.
+            <div className="col-span-full">
+              <EmptyState
+                icon={<IconStation className="w-6 h-6" />}
+                title="No stations yet"
+                hint="Add your first charging station to get started."
+                action={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Station</Button>}
+              />
             </div>
           )}
         </div>
@@ -145,10 +153,11 @@ export const AdminEmployees: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Employees</h2>
-        <Button onClick={() => setIsAdding(true)}>Add Employee</Button>
-      </div>
+      <PageHeader
+        title="Employees"
+        subtitle="Staff accounts that can open shifts and run sessions"
+        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Employee</Button>}
+      />
 
       {isAdding && (
         <Card title="New Employee">
@@ -181,10 +190,11 @@ export const AdminEmployees: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading employees...</div>
+        <Card><TableSkeleton rows={5} cols={4} /></Card>
       ) : (
         <Card>
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px]">
             <thead className="text-left border-b border-gray-100">
               <tr className="text-xs text-gray-400 uppercase tracking-wider">
                 <th className="pb-3 px-2">Name</th>
@@ -199,18 +209,17 @@ export const AdminEmployees: React.FC = () => {
                   <td className="py-3 px-2 font-medium">{emp.name}</td>
                   <td className="py-3 px-2 text-gray-500">{emp.phone_number}</td>
                   <td className="py-3 px-2">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      emp.is_active ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
-                    }`}>
+                    <Badge tone={emp.is_active ? "green" : "red"}>
                       {emp.is_active ? "Active" : "Inactive"}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="py-3 px-2 text-right">
                     <button
                       onClick={() => deleteEmployee(emp.id)}
-                      className="text-xs text-red-500 hover:underline"
+                      aria-label="Remove employee"
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
-                      Remove
+                      <IconTrash className="w-4 h-4" />
                     </button>
                   </td>
                 </tr>
@@ -222,6 +231,7 @@ export const AdminEmployees: React.FC = () => {
               )}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
     </div>
@@ -250,10 +260,11 @@ export const AdminChargers: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Chargers</h2>
-        <Button onClick={() => setIsAdding(true)}>Add Charger</Button>
-      </div>
+      <PageHeader
+        title="Chargers"
+        subtitle="Each charger has a left and a right port, charging independently"
+        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Charger</Button>}
+      />
 
       {isAdding && (
         <Card title="New Charger">
@@ -264,21 +275,18 @@ export const AdminChargers: React.FC = () => {
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
             />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Station</label>
-              <select
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500"
-                value={form.station || ""}
-                onChange={e => setForm({ ...form, station: e.target.value ? parseInt(e.target.value) : 0 })}
-              >
-                <option value="">Select station...</option>
-                {stations.map(st => (
-                  <option key={st.id} value={st.id}>{st.name}</option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Station"
+              value={form.station || ""}
+              onChange={e => setForm({ ...form, station: e.target.value ? parseInt(e.target.value) : 0 })}
+            >
+              <option value="">Select station...</option>
+              {stations.map(st => (
+                <option key={st.id} value={st.id}>{st.name}</option>
+              ))}
+            </Select>
           </div>
-          <p className="text-xs text-gray-400 mt-2">Every charger gets a left and a right port, both free to start.</p>
+          <p className="text-xs text-gray-400 mt-2">Every charger can charge up to 2 cars at the same time.</p>
           <div className="flex gap-2 mt-4">
             <Button onClick={handleCreate} disabled={saving || !form.name.trim() || !form.station}>
               {saving ? "Creating..." : "Create Charger"}
@@ -289,7 +297,7 @@ export const AdminChargers: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading chargers...</div>
+        <Loading label="Loading chargers..." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {chargers.map(c => (
@@ -301,28 +309,44 @@ export const AdminChargers: React.FC = () => {
                 </div>
                 <button
                   onClick={() => deleteCharger(c.id)}
-                  className="text-xs text-red-500 hover:underline shrink-0"
+                  aria-label="Delete charger"
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                 >
-                  Delete
+                  <IconTrash className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex gap-2">
-                {c.ports.map(p => (
-                  <span
-                    key={p.port}
-                    className={`flex-1 text-center text-xs font-semibold px-2 py-1.5 rounded-lg ${
-                      p.available ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
+              {(() => {
+                const carsCharging = c.ports.filter(p => !p.available).length;
+                const capacity = c.ports.length;
+                const full = carsCharging >= capacity;
+                return (
+                  <div
+                    className={`text-center text-xs font-semibold px-2 py-1.5 rounded-lg ${
+                      full
+                        ? "bg-red-50 text-red-500"
+                        : carsCharging > 0
+                        ? "bg-amber-50 text-amber-600"
+                        : "bg-green-50 text-green-700"
                     }`}
                   >
-                    {p.port === "left" ? "Left" : "Right"} — {p.available ? "Free" : "In Use"}
-                  </span>
-                ))}
-              </div>
+                    {full
+                      ? "Not available — charging 2 cars"
+                      : carsCharging > 0
+                      ? `${carsCharging} car charging · 1 slot free`
+                      : "Available"}
+                  </div>
+                );
+              })()}
             </Card>
           ))}
           {chargers.length === 0 && (
-            <div className="col-span-full text-center py-12 text-gray-400 border border-dashed rounded-xl">
-              No chargers yet. Add one above.
+            <div className="col-span-full">
+              <EmptyState
+                icon={<IconCharger className="w-6 h-6" />}
+                title="No chargers yet"
+                hint="Add a charger to a station so staff can start sessions."
+                action={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Charger</Button>}
+              />
             </div>
           )}
         </div>

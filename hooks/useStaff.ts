@@ -137,8 +137,9 @@ export const useStaffDashboard = () => {
     try {
       const res = await api.get("api/stations/dashboard/");
       setData(res.data.data ?? null);
-    } catch {
-      errorToast("Failed to load dashboard");
+    } catch (e: any) {
+      // 404 just means no open shift — a normal state, not an error.
+      if (e?.response?.status !== 404) errorToast("Failed to load dashboard");
       setData(null);
     } finally {
       setLoading(false);
@@ -281,19 +282,20 @@ export const useSession = () => {
     }
   };
 
+  // Returns the completed session (with computed total_price/duration) so the
+  // UI can present the price — no toast here.
   const endSession = async (
     session_id: number,
     watt_consumed: string,
     ending_car_percentage: number
-  ): Promise<boolean> => {
+  ): Promise<Session | null> => {
     try {
       const res = await api.post("api/sessions/end/", { session_id, watt_consumed, ending_car_percentage });
       setActiveSessions(prev => prev.filter(s => s.id !== session_id));
-      successToast(`Session ended — Total: $${parseFloat(res.data.data.total_price).toFixed(2)}`);
-      return true;
+      return (res.data.data as Session) ?? null;
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to end session");
-      return false;
+      return null;
     }
   };
 

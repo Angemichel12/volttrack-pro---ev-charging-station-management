@@ -1,15 +1,22 @@
-import React, { useState } from "react";
-import { Card, Button, Input } from "../components/Shared";
+import React, { useEffect, useState } from "react";
+import { Card, Button, Input, Select, TableSkeleton } from "../components/Shared";
+import { IconExport } from "../components/Icons";
+import { rwf, kw } from "../utils/format";
 import { useStations } from "../hooks/useStaff";
-import { useAdminEmployees, type Employee } from "../hooks/useAdmin";
+import { type Employee } from "../hooks/useAdmin";
 import { useSessionReport, useShiftReport, type ReportFilters } from "../hooks/useReports";
 
-const ReportsPanel: React.FC<{ isAdmin: boolean; employees: Employee[] }> = ({ isAdmin, employees }) => {
+// Embeddable detailed-report panel: data loads automatically as filters change,
+// and the same filtered slice can be downloaded as Excel or PDF.
+export const ReportPanel: React.FC<{
+  type: "sessions" | "shifts";
+  isAdmin: boolean;
+  employees?: Employee[];
+}> = ({ type, isAdmin, employees = [] }) => {
   const { stations } = useStations();
   const sessionReport = useSessionReport();
   const shiftReport = useShiftReport();
 
-  const [tab, setTab] = useState<"sessions" | "shifts">("sessions");
   const [staffId, setStaffId] = useState("");
   const [stationId, setStationId] = useState("");
   const [chargerId, setChargerId] = useState("");
@@ -20,71 +27,59 @@ const ReportsPanel: React.FC<{ isAdmin: boolean; employees: Employee[] }> = ({ i
   const buildFilters = (): ReportFilters => ({
     staff: isAdmin && staffId ? parseInt(staffId) : undefined,
     station: stationId ? parseInt(stationId) : undefined,
-    charger: tab === "sessions" && chargerId ? parseInt(chargerId) : undefined,
-    shift: tab === "sessions" && shiftId ? parseInt(shiftId) : undefined,
+    charger: type === "sessions" && chargerId ? parseInt(chargerId) : undefined,
+    shift: type === "sessions" && shiftId ? parseInt(shiftId) : undefined,
     date_from: dateFrom || undefined,
     date_to: dateTo || undefined,
   });
 
-  const active = tab === "sessions" ? sessionReport : shiftReport;
+  const active = type === "sessions" ? sessionReport : shiftReport;
 
-  const handleLoad = () => active.fetchReport(buildFilters());
+  // Auto-load: fetch on mount and whenever a filter changes (debounced so
+  // typing a charger/shift id doesn't fire a request per keystroke).
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      active.fetchReport(buildFilters());
+    }, 350);
+    return () => clearTimeout(timeout);
+  }, [type, staffId, stationId, chargerId, shiftId, dateFrom, dateTo]);
+
   const handleExcel = () => active.downloadExcel(buildFilters());
   const handlePdf = () => active.downloadPdf(buildFilters());
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Detailed Reports</h2>
+    <div className="space-y-4">
 
-      {/* ── Tabs ──────────────────────────────────────────────────── */}
-      <div className="flex gap-2 border-b border-gray-200">
-        {(["sessions", "shifts"] as const).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            {t === "sessions" ? "Sessions" : "Shifts"}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Filters ───────────────────────────────────────────────── */}
-      <Card title="Filters">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {isAdmin && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Staff</label>
-              <select
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500"
-                value={staffId}
-                onChange={e => setStaffId(e.target.value)}
-              >
-                <option value="">All Staff</option>
-                {employees.map(e => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Station</label>
-            <select
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500"
-              value={stationId}
-              onChange={e => setStationId(e.target.value)}
-            >
-              <option value="">All Stations</option>
-              {stations.map(st => (
-                <option key={st.id} value={st.id}>{st.name}</option>
-              ))}
-            </select>
+      {/* ── Filters + downloads ───────────────────────────────────── */}
+      <Card
+        title="Filters"
+        actions={
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleExcel} className="!px-3">
+              <IconExport className="w-4 h-4" /> Excel
+            </Button>
+            <Button variant="secondary" onClick={handlePdf} className="!px-3">
+              <IconExport className="w-4 h-4" /> PDF
+            </Button>
           </div>
-          {tab === "sessions" && (
+        }
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {isAdmin && (
+            <Select label="Staff" value={staffId} onChange={e => setStaffId(e.target.value)}>
+              <option value="">All Staff</option>
+              {employees.map(e => (
+                <option key={e.id} value={e.id}>{e.name}</option>
+              ))}
+            </Select>
+          )}
+          <Select label="Station" value={stationId} onChange={e => setStationId(e.target.value)}>
+            <option value="">All Stations</option>
+            {stations.map(st => (
+              <option key={st.id} value={st.id}>{st.name}</option>
+            ))}
+          </Select>
+          {type === "sessions" && (
             <>
               <Input
                 label="Charger ID (optional)"
@@ -115,29 +110,25 @@ const ReportsPanel: React.FC<{ isAdmin: boolean; employees: Employee[] }> = ({ i
             onChange={e => setDateTo(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-2 mt-4">
-          <Button onClick={handleLoad} disabled={active.loading}>
-            {active.loading ? "Loading..." : "Load Report"}
-          </Button>
-          <Button variant="secondary" onClick={handleExcel}>Download Excel</Button>
-          <Button variant="secondary" onClick={handlePdf}>Download PDF</Button>
-        </div>
       </Card>
 
-      {/* ── Results ───────────────────────────────────────────────── */}
-      {tab === "sessions" ? (
+      {/* ── Results — skeleton on first load, reduced opacity on refetch ── */}
+      {active.loading && active.rows.length === 0 ? (
+        <Card><TableSkeleton rows={6} cols={7} /></Card>
+      ) : (
+      <div className={active.loading ? "opacity-60 transition-opacity" : "transition-opacity"}>
+      {type === "sessions" ? (
         <Card>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[900px]">
               <thead className="text-left border-b border-gray-100">
                 <tr className="text-xs text-gray-400 uppercase tracking-wider">
                   <th className="pb-3 px-2">Staff</th>
                   <th className="pb-3 px-2">Station</th>
                   <th className="pb-3 px-2">Charger</th>
-                  <th className="pb-3 px-2">Port</th>
                   <th className="pb-3 px-2">Plate</th>
                   <th className="pb-3 px-2">Battery</th>
-                  <th className="pb-3 px-2">Watts</th>
+                  <th className="pb-3 px-2">kW</th>
                   <th className="pb-3 px-2">Duration</th>
                   <th className="pb-3 px-2">Paid</th>
                   <th className="pb-3 px-2">Started</th>
@@ -147,8 +138,8 @@ const ReportsPanel: React.FC<{ isAdmin: boolean; employees: Employee[] }> = ({ i
               <tbody className="divide-y divide-gray-50">
                 {sessionReport.rows.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="text-center py-8 text-gray-400">
-                      No data — adjust filters and click Load Report
+                    <td colSpan={10} className="text-center py-8 text-gray-400">
+                      {sessionReport.loading ? "Loading report..." : "No data for these filters"}
                     </td>
                   </tr>
                 )}
@@ -157,15 +148,14 @@ const ReportsPanel: React.FC<{ isAdmin: boolean; employees: Employee[] }> = ({ i
                     <td className="py-3 px-2 font-medium">{r.staff_name}</td>
                     <td className="py-3 px-2 text-gray-500">{r.station_name}</td>
                     <td className="py-3 px-2 text-gray-500">{r.charger_name}</td>
-                    <td className="py-3 px-2 text-gray-500">{r.port === "left" ? "Left" : "Right"}</td>
                     <td className="py-3 px-2">{r.car_plate}</td>
                     <td className="py-3 px-2 text-gray-500">
                       {r.starting_car_percentage}% → {r.ending_car_percentage ?? "—"}%
                     </td>
-                    <td className="py-3 px-2">{r.watt_consumed ? `${r.watt_consumed}W` : "—"}</td>
+                    <td className="py-3 px-2">{r.watt_consumed ? kw(r.watt_consumed) : "—"}</td>
                     <td className="py-3 px-2 text-gray-500">{r.duration ?? "—"}</td>
-                    <td className="py-3 px-2 font-semibold text-blue-600">
-                      {r.total_price ? `Rwf ${parseFloat(r.total_price).toFixed(2)}` : "—"}
+                    <td className="py-3 px-2 font-semibold text-green-700">
+                      {r.total_price ? rwf(r.total_price) : "—"}
                     </td>
                     <td className="py-3 px-2 text-gray-400 text-xs">
                       {new Date(r.started_at).toLocaleString()}
@@ -182,7 +172,7 @@ const ReportsPanel: React.FC<{ isAdmin: boolean; employees: Employee[] }> = ({ i
       ) : (
         <Card>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[900px]">
               <thead className="text-left border-b border-gray-100">
                 <tr className="text-xs text-gray-400 uppercase tracking-wider">
                   <th className="pb-3 px-2">Staff</th>
@@ -202,7 +192,7 @@ const ReportsPanel: React.FC<{ isAdmin: boolean; employees: Employee[] }> = ({ i
                 {shiftReport.rows.length === 0 && (
                   <tr>
                     <td colSpan={11} className="text-center py-8 text-gray-400">
-                      No data — adjust filters and click Load Report
+                      {shiftReport.loading ? "Loading report..." : "No data for these filters"}
                     </td>
                   </tr>
                 )}
@@ -222,8 +212,8 @@ const ReportsPanel: React.FC<{ isAdmin: boolean; employees: Employee[] }> = ({ i
                     <td className="py-3 px-2">
                       {sh.total_kwatt_used_on_shift ? `${sh.total_kwatt_used_on_shift} kWh` : "—"}
                     </td>
-                    <td className="py-3 px-2 font-semibold text-blue-600">
-                      {sh.total_earned_money_on_shift ? `Rwf ${parseFloat(sh.total_earned_money_on_shift).toFixed(2)}` : "—"}
+                    <td className="py-3 px-2 font-semibold text-green-700">
+                      {sh.total_earned_money_on_shift ? rwf(sh.total_earned_money_on_shift) : "—"}
                     </td>
                     <td className="py-3 px-2">{sh.money_on_momo ?? "—"}</td>
                     <td className="py-3 px-2">{sh.total_car_charged ?? 0}</td>
@@ -234,15 +224,8 @@ const ReportsPanel: React.FC<{ isAdmin: boolean; employees: Employee[] }> = ({ i
           </div>
         </Card>
       )}
+      </div>
+      )}
     </div>
   );
-};
-
-export const AdminDetailedReports: React.FC = () => {
-  const { employees } = useAdminEmployees();
-  return <ReportsPanel isAdmin employees={employees} />;
-};
-
-export const StaffDetailedReports: React.FC = () => {
-  return <ReportsPanel isAdmin={false} employees={[]} />;
 };
