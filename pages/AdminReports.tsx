@@ -8,9 +8,9 @@ import { ReportPanel } from "./DetailedReports";
 type Tab = "overview" | "sessions" | "shifts";
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: "overview", label: "Overview" },
-  { key: "sessions", label: "Sessions" },
-  { key: "shifts", label: "Shifts" },
+  { key: "overview", label: "Overview / Incamake" },
+  { key: "sessions", label: "Sessions / Gusharija" },
+  { key: "shifts", label: "Shifts / Zamu" },
 ];
 
 export const AdminReports: React.FC = () => {
@@ -35,8 +35,8 @@ export const AdminReports: React.FC = () => {
 
       {/* ── Header ───────────────────────────────────────────────── */}
       <PageHeader
-        title="Reports"
-        subtitle="Review earnings and usage, filter the details, and download Excel or PDF"
+        title="Reports / Raporo"
+        subtitle="Download Excel / PDF"
       />
 
       {/* ── Tabs ─────────────────────────────────────────────────── */}
@@ -77,7 +77,7 @@ export const AdminReports: React.FC = () => {
               value={activeStation}
               onChange={e => setActiveStation(e.target.value === "all" ? "all" : parseInt(e.target.value))}
             >
-              <option value="all">All Stations</option>
+              <option value="all">All / Zose</option>
               {stations.map(st => (
                 <option key={st.id} value={st.id}>{st.name}</option>
               ))}
@@ -87,42 +87,42 @@ export const AdminReports: React.FC = () => {
           {/* ── Summary Stats ─────────────────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <StatCard
-              label="Total earnings"
+              label="Earnings / Ayinjiye"
               value={rwf(totalEarnings)}
               icon={<IconMoney className="w-5 h-5" />}
               tone="green"
             />
             <StatCard
-              label="kW consumed"
+              label="kW used / kW zakoreshejwe"
               value={kw(totalWatt)}
               icon={<IconBolt className="w-5 h-5" />}
             />
             <StatCard
-              label="Total sessions"
+              label="Sessions / Gusharija"
               value={totalSessions}
               icon={<IconCharger className="w-5 h-5" />}
             />
           </div>
 
           {/* ── Per Station Breakdown ─────────────────────────────── */}
-          <Card title="Station Breakdown">
+          <Card title="Per Station / Kuri buri Sitasiyo">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px]">
                 <thead className="text-left border-b border-gray-100">
                   <tr className="text-xs text-gray-400 uppercase tracking-wider">
-                    <th className="pb-3 px-2">Station</th>
-                    <th className="pb-3 px-2">Rate</th>
-                    <th className="pb-3 px-2">Sessions</th>
-                    <th className="pb-3 px-2">kW Used</th>
-                    <th className="pb-3 px-2">Earnings</th>
-                    <th className="pb-3 px-2">% of Total</th>
+                    <th className="pb-3 px-2">Station / Sitasiyo</th>
+                    <th className="pb-3 px-2">Price / Igiciro</th>
+                    <th className="pb-3 px-2">Sessions / Gusharija</th>
+                    <th className="pb-3 px-2">kW</th>
+                    <th className="pb-3 px-2">Earnings / Ayinjiye</th>
+                    <th className="pb-3 px-2">%</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {filtered.length === 0 && (
                     <tr>
                       <td colSpan={6} className="text-center py-8 text-gray-400">
-                        No data yet
+                        No data / Nta makuru
                       </td>
                     </tr>
                   )}
@@ -187,7 +187,7 @@ export const AdminReports: React.FC = () => {
                     <div>
                       <h3 className="font-bold text-gray-900">{st.name}</h3>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        Rate: {st.price_per_watt ? `Rwf ${st.price_per_watt}/kW` : "Not set"}
+                        Price / Igiciro: {st.price_per_watt ? `Rwf ${st.price_per_watt}/kW` : "—"}
                       </p>
                     </div>
                     <span className="w-9 h-9 rounded-xl bg-green-50 text-green-700 flex items-center justify-center">
@@ -196,9 +196,9 @@ export const AdminReports: React.FC = () => {
                   </div>
                   <div className="space-y-2 text-sm">
                     {[
-                      ["Sessions",  data?.sessions   ?? 0],
-                      ["Earnings",  data ? rwf(data.earnings) : "Rwf 0"],
-                      ["kW used",   data ? kw(data.watt_used) : "0 kW"],
+                      ["Sessions / Gusharija",  data?.sessions   ?? 0],
+                      ["Earnings / Ayinjiye",  data ? rwf(data.earnings) : "Rwf 0"],
+                      ["kW",   data ? kw(data.watt_used) : "0 kW"],
                     ].map(([label, val]) => (
                       <div key={String(label)} className="flex justify-between py-1.5 border-b border-gray-50 last:border-0">
                         <span className="text-gray-500">{label}</span>

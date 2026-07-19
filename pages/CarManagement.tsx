@@ -48,33 +48,32 @@ export const CarManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Cars"
-        subtitle="Registered vehicles and their owners"
-        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Car</Button>}
+        title="Cars / Imodoka"
+        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Car / Andika Imodoka</Button>}
       />
 
       {isAdding && (
-        <Card title="New Car">
+        <Card title="New Car / Imodoka Nshya">
           <div className={`grid grid-cols-1 md:grid-cols-2 ${isAdmin ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-4`}>
             <Input
-              label="Plate Number"
+              label="Plate Number / Plaque"
               placeholder="ABC-123"
               value={form.plate_number}
               onChange={e => setForm({ ...form, plate_number: e.target.value })}
             />
             <Input
-              label="Owner Name (optional)"
+              label="Owner / Nyir'imodoka (si ngombwa)"
               value={form.owner_name}
               onChange={e => setForm({ ...form, owner_name: e.target.value })}
             />
             <Input
-              label="Owner Phone (optional)"
+              label="Phone / Telephone (si ngombwa)"
               value={form.phone_number}
               onChange={e => setForm({ ...form, phone_number: e.target.value })}
             />
             {isAdmin && (
               <Input
-                label="Unique Price/kW in Rwf (optional)"
+                label="Price/kW (Rwf) / Igiciro (si ngombwa)"
                 type="number"
                 step="0.0001"
                 placeholder="Overrides station rate"
@@ -83,17 +82,17 @@ export const CarManagement: React.FC = () => {
               />
             )}
             <Input
-              label="Notes (optional)"
+              label="Notes / Ibindi (si ngombwa)"
               value={form.optional_info}
               onChange={e => setForm({ ...form, optional_info: e.target.value })}
             />
           </div>
           <div className="flex gap-2 mt-4">
             <Button onClick={handleCreate} disabled={saving || !form.plate_number.trim()}>
-              {saving ? "Adding..." : "Add Car"}
+              {saving ? "Tegereza..." : "Add / Andika"}
             </Button>
             <Button variant="outline" onClick={() => { setIsAdding(false); setForm(emptyForm); }}>
-              Cancel
+              Cancel / Reka
             </Button>
           </div>
         </Card>
@@ -107,11 +106,11 @@ export const CarManagement: React.FC = () => {
             <table className="w-full">
               <thead className="text-left border-b border-gray-100">
                 <tr className="text-xs text-gray-400 uppercase tracking-wider">
-                  <th className="pb-3 px-2">Plate</th>
-                  <th className="pb-3 px-2">Owner</th>
-                  <th className="pb-3 px-2">Phone</th>
-                  <th className="pb-3 px-2">Notes</th>
-                  {isAdmin && <th className="pb-3 px-2">Unique Price/kW (Rwf)</th>}
+                  <th className="pb-3 px-2">Plate / Plaque</th>
+                  <th className="pb-3 px-2">Owner / Nyir'imodoka</th>
+                  <th className="pb-3 px-2">Phone / Telephone</th>
+                  <th className="pb-3 px-2">Notes / Ibindi</th>
+                  {isAdmin && <th className="pb-3 px-2">Price/kW (Rwf)</th>}
                   {isAdmin && <th className="pb-3 px-2"></th>}
                 </tr>
               </thead>
@@ -159,7 +158,7 @@ export const CarManagement: React.FC = () => {
                 {cars.length === 0 && (
                   <tr>
                     <td colSpan={isAdmin ? 6 : 4} className="text-center py-8 text-gray-400">
-                      No cars found
+                      No cars / Nta modoka
                     </td>
                   </tr>
                 )}

@@ -46,13 +46,13 @@ export const useLogin = () => {
         station: data.station,
       });
 
-      successToast(`Welcome back, ${data.name}!`);
+      successToast(`Murakaza neza, ${data.name}!`);
 
       if (data.role === "admin") navigate("/admin/dashboard");
       else if (data.role === "staff") navigate("/staff/shift");
 
     } catch (error: any) {
-      errorToast(error?.response?.data?.message || "Login failed. Please check your credentials.");
+      errorToast(error?.response?.data?.message || "Login failed / Kwinjira byanze");
     } finally {
       setLoading(false);
     }

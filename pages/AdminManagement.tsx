@@ -33,22 +33,21 @@ export const AdminStations: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Stations"
-        subtitle="Create stations and manage their charging rates"
-        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Station</Button>}
+        title="Stations / Sitasiyo"
+        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add / Ongera</Button>}
       />
 
       {isAdding && (
-        <Card title="New Station">
+        <Card title="New Station / Sitasiyo Nshya">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Station Name"
+              label="Name / Izina"
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
               placeholder="e.g. Station Alpha"
             />
             <Input
-              label="Price per kW (optional)"
+              label="Price/kW / Igiciro (si ngombwa)"
               type="number"
               step="0.0001"
               value={form.price_per_watt || ""}
@@ -58,15 +57,15 @@ export const AdminStations: React.FC = () => {
           </div>
           <div className="flex gap-2 mt-4">
             <Button onClick={handleCreate} disabled={saving}>
-              {saving ? "Creating..." : "Create Station"}
+              {saving ? "Tegereza..." : "Create / Emeza"}
             </Button>
-            <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel / Reka</Button>
           </div>
         </Card>
       )}
 
       {loading ? (
-        <Loading label="Loading stations..." />
+        <Loading label="Tegereza..." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {stations.map(st => (
@@ -75,10 +74,10 @@ export const AdminStations: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-bold">{st.name}</h3>
                   <p className="text-sm text-gray-500">
-                    Rate: {st.price_per_watt ? `Rwf ${st.price_per_watt}/kW` : "Not set"}
+                    Price / Igiciro: {st.price_per_watt ? `Rwf ${st.price_per_watt}/kW` : "—"}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Created: {new Date(st.created_at).toLocaleDateString()}
+                    {new Date(st.created_at).toLocaleDateString()}
                   </p>
                 </div>
                 <button
@@ -93,7 +92,7 @@ export const AdminStations: React.FC = () => {
               {/* Inline price setter per station */}
               <div className="flex gap-2 items-end pt-3 border-t border-gray-100">
                 <Input
-                  label="Update Rate (Rwf/kW)"
+                  label="New price (Rwf/kW) / Igiciro gishya"
                   type="number"
                   step="0.0001"
                   placeholder="e.g. 0.0050"
@@ -115,9 +114,8 @@ export const AdminStations: React.FC = () => {
             <div className="col-span-full">
               <EmptyState
                 icon={<IconStation className="w-6 h-6" />}
-                title="No stations yet"
-                hint="Add your first charging station to get started."
-                action={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Station</Button>}
+                title="No stations / Nta sitasiyo"
+                action={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add / Ongera</Button>}
               />
             </div>
           )}
@@ -154,27 +152,26 @@ export const AdminEmployees: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Employees"
-        subtitle="Staff accounts that can open shifts and run sessions"
-        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Employee</Button>}
+        title="Employees / Abakozi"
+        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add / Ongera</Button>}
       />
 
       {isAdding && (
-        <Card title="New Employee">
+        <Card title="New Employee / Umukozi Mushya">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Input
-              label="Full Name"
+              label="Name / Izina"
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
             />
             <Input
-              label="Phone Number"
+              label="Phone Number / Numero ya Telephone"
               type="tel"
               value={form.phone_number}
               onChange={e => setForm({ ...form, phone_number: e.target.value })}
             />
             <Input
-              label="Password"
+              label="Password / Ijambobanga"
               type="password"
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
@@ -182,9 +179,9 @@ export const AdminEmployees: React.FC = () => {
           </div>
           <div className="flex gap-2 mt-4">
             <Button onClick={handleCreate} disabled={saving}>
-              {saving ? "Creating..." : "Create Employee"}
+              {saving ? "Tegereza..." : "Create / Emeza"}
             </Button>
-            <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel / Reka</Button>
           </div>
         </Card>
       )}
@@ -197,8 +194,8 @@ export const AdminEmployees: React.FC = () => {
           <table className="w-full min-w-[480px]">
             <thead className="text-left border-b border-gray-100">
               <tr className="text-xs text-gray-400 uppercase tracking-wider">
-                <th className="pb-3 px-2">Name</th>
-                <th className="pb-3 px-2">Phone Number</th>
+                <th className="pb-3 px-2">Name / Izina</th>
+                <th className="pb-3 px-2">Phone / Telephone</th>
                 <th className="pb-3 px-2">Status</th>
                 <th className="pb-3 px-2"></th>
               </tr>
@@ -210,7 +207,7 @@ export const AdminEmployees: React.FC = () => {
                   <td className="py-3 px-2 text-gray-500">{emp.phone_number}</td>
                   <td className="py-3 px-2">
                     <Badge tone={emp.is_active ? "green" : "red"}>
-                      {emp.is_active ? "Active" : "Inactive"}
+                      {emp.is_active ? "Active / Arakora" : "Inactive / Ntakora"}
                     </Badge>
                   </td>
                   <td className="py-3 px-2 text-right">
@@ -226,7 +223,7 @@ export const AdminEmployees: React.FC = () => {
               ))}
               {employees.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="text-center py-8 text-gray-400">No employees found</td>
+                  <td colSpan={4} className="text-center py-8 text-gray-400">No employees / Nta bakozi</td>
                 </tr>
               )}
             </tbody>
@@ -262,42 +259,41 @@ export const AdminChargers: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         title="Chargers"
-        subtitle="Each charger has a left and a right port, charging independently"
-        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Charger</Button>}
+        subtitle="1 charger = 2 cars / Charger imwe = imodoka 2"
+        actions={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add / Ongera</Button>}
       />
 
       {isAdding && (
-        <Card title="New Charger">
+        <Card title="New Charger / Charger Nshya">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Charger Name"
-              placeholder="e.g. Charger A"
+              label="Name / Izina"
+              placeholder="urugero: Charger A"
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
             />
             <Select
-              label="Station"
+              label="Station / Sitasiyo"
               value={form.station || ""}
               onChange={e => setForm({ ...form, station: e.target.value ? parseInt(e.target.value) : 0 })}
             >
-              <option value="">Select station...</option>
+              <option value="">Hitamo sitasiyo...</option>
               {stations.map(st => (
                 <option key={st.id} value={st.id}>{st.name}</option>
               ))}
             </Select>
           </div>
-          <p className="text-xs text-gray-400 mt-2">Every charger can charge up to 2 cars at the same time.</p>
           <div className="flex gap-2 mt-4">
             <Button onClick={handleCreate} disabled={saving || !form.name.trim() || !form.station}>
-              {saving ? "Creating..." : "Create Charger"}
+              {saving ? "Tegereza..." : "Create / Emeza"}
             </Button>
-            <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel / Reka</Button>
           </div>
         </Card>
       )}
 
       {loading ? (
-        <Loading label="Loading chargers..." />
+        <Loading label="Tegereza..." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {chargers.map(c => (
@@ -330,10 +326,10 @@ export const AdminChargers: React.FC = () => {
                     }`}
                   >
                     {full
-                      ? "Not available — charging 2 cars"
+                      ? "Full / Yuzuye"
                       : carsCharging > 0
-                      ? `${carsCharging} car charging · 1 slot free`
-                      : "Available"}
+                      ? `Imodoka ${carsCharging} irasharija`
+                      : "Free / Irahari"}
                   </div>
                 );
               })()}
@@ -343,9 +339,8 @@ export const AdminChargers: React.FC = () => {
             <div className="col-span-full">
               <EmptyState
                 icon={<IconCharger className="w-6 h-6" />}
-                title="No chargers yet"
-                hint="Add a charger to a station so staff can start sessions."
-                action={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add Charger</Button>}
+                title="No chargers / Nta charger"
+                action={<Button onClick={() => setIsAdding(true)}><IconPlus className="w-4 h-4" /> Add / Ongera</Button>}
               />
             </div>
           )}

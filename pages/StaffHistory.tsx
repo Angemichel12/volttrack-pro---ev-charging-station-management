@@ -15,13 +15,13 @@ export const StaffHistory: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="My History" subtitle="Everything you've charged and every shift you've worked" />
+      <PageHeader title="History / Amateka" subtitle="Sessions + shifts / Gusharija + zamu" />
 
       {/* ── Summary ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Sessions" value={completed.length} icon={<IconCharger className="w-5 h-5" />} />
-        <StatCard label="Earnings" value={rwf(totalEarnings)} icon={<IconMoney className="w-5 h-5" />} tone="green" />
-        <StatCard label="kW consumed" value={kw(totalWatt)} icon={<IconBolt className="w-5 h-5" />} />
+        <StatCard label="Sessions / Gusharija" value={completed.length} icon={<IconCharger className="w-5 h-5" />} />
+        <StatCard label="Earnings / Ayinjiye" value={rwf(totalEarnings)} icon={<IconMoney className="w-5 h-5" />} tone="green" />
+        <StatCard label="kW used / kW zakoreshejwe" value={kw(totalWatt)} icon={<IconBolt className="w-5 h-5" />} />
         <StatCard label="kWh (shifts)" value={`${totalKwh.toFixed(2)} kWh`} icon={<IconShift className="w-5 h-5" />} />
       </div>
 
@@ -31,13 +31,13 @@ export const StaffHistory: React.FC = () => {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               tab === t
                 ? "border-green-600 text-green-700"
                 : "border-transparent text-gray-400 hover:text-gray-600"
             }`}
           >
-            {t}
+            {t === "sessions" ? "Sessions / Gusharija" : "Shifts / Zamu"}
           </button>
         ))}
       </div>
@@ -51,18 +51,18 @@ export const StaffHistory: React.FC = () => {
           <table className="w-full min-w-[640px]">
             <thead className="text-left border-b border-gray-100">
               <tr className="text-xs text-gray-400 uppercase tracking-wider">
-                <th className="pb-3 px-2">Plate</th>
+                <th className="pb-3 px-2">Plate / Plaque</th>
                 <th className="pb-3 px-2">Charger</th>
-                <th className="pb-3 px-2">Battery</th>
+                <th className="pb-3 px-2">Battery / Batiri</th>
                 <th className="pb-3 px-2">kW</th>
-                <th className="pb-3 px-2">Price</th>
-                <th className="pb-3 px-2">Started</th>
+                <th className="pb-3 px-2">Price / Igiciro</th>
+                <th className="pb-3 px-2">Start / Itangira</th>
                 <th className="pb-3 px-2">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {sessions.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-8 text-gray-400">No sessions yet</td></tr>
+                <tr><td colSpan={7} className="text-center py-8 text-gray-400">No sessions / Nta gusharija</td></tr>
               )}
               {sessions.map(s => (
                 <tr key={s.id} className="text-sm">
@@ -82,7 +82,7 @@ export const StaffHistory: React.FC = () => {
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                       s.ended_at ? "bg-gray-100 text-gray-500" : "bg-green-50 text-green-700 animate-pulse"
                     }`}>
-                      {s.ended_at ? "Done" : "Active"}
+                      {s.ended_at ? "Done / Byarangiye" : "Charging / Irasharija"}
                     </span>
                   </td>
                 </tr>
@@ -98,19 +98,19 @@ export const StaffHistory: React.FC = () => {
           <table className="w-full min-w-[720px]">
             <thead className="text-left border-b border-gray-100">
               <tr className="text-xs text-gray-400 uppercase tracking-wider">
-                <th className="pb-3 px-2">Station</th>
-                <th className="pb-3 px-2">Start</th>
-                <th className="pb-3 px-2">End</th>
+                <th className="pb-3 px-2">Station / Sitasiyo</th>
+                <th className="pb-3 px-2">Start / Itangira</th>
+                <th className="pb-3 px-2">End / Iherezo</th>
                 <th className="pb-3 px-2">Start Cashpower</th>
                 <th className="pb-3 px-2">End Cashpower</th>
-                <th className="pb-3 px-2">Money on Momo</th>
-                <th className="pb-3 px-2">Consumed</th>
+                <th className="pb-3 px-2">MoMo</th>
+                <th className="pb-3 px-2">kW used / Zakoreshejwe</th>
                 <th className="pb-3 px-2">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {shifts.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-8 text-gray-400">No shifts yet</td></tr>
+                <tr><td colSpan={8} className="text-center py-8 text-gray-400">No shifts / Nta zamu</td></tr>
               )}
               {shifts.map(sh => (
                 <tr key={sh.id} className="text-sm">
@@ -131,7 +131,7 @@ export const StaffHistory: React.FC = () => {
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                       sh.shift_end ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-500 animate-pulse"
                     }`}>
-                      {sh.shift_end ? "Closed" : "Open"}
+                      {sh.shift_end ? "Closed / Yafunzwe" : "Open / Ifunguye"}
                     </span>
                   </td>
                 </tr>

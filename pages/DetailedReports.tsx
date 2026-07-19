@@ -52,7 +52,7 @@ export const ReportPanel: React.FC<{
 
       {/* ── Filters + downloads ───────────────────────────────────── */}
       <Card
-        title="Filters"
+        title="Filters / Shungura"
         actions={
           <div className="flex gap-2">
             <Button variant="secondary" onClick={handleExcel} className="!px-3">
@@ -66,15 +66,15 @@ export const ReportPanel: React.FC<{
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {isAdmin && (
-            <Select label="Staff" value={staffId} onChange={e => setStaffId(e.target.value)}>
-              <option value="">All Staff</option>
+            <Select label="Staff / Umukozi" value={staffId} onChange={e => setStaffId(e.target.value)}>
+              <option value="">All / Bose</option>
               {employees.map(e => (
                 <option key={e.id} value={e.id}>{e.name}</option>
               ))}
             </Select>
           )}
-          <Select label="Station" value={stationId} onChange={e => setStationId(e.target.value)}>
-            <option value="">All Stations</option>
+          <Select label="Station / Sitasiyo" value={stationId} onChange={e => setStationId(e.target.value)}>
+            <option value="">All / Zose</option>
             {stations.map(st => (
               <option key={st.id} value={st.id}>{st.name}</option>
             ))}
@@ -82,29 +82,29 @@ export const ReportPanel: React.FC<{
           {type === "sessions" && (
             <>
               <Input
-                label="Charger ID (optional)"
+                label="Charger ID (si ngombwa)"
                 type="number"
-                placeholder="e.g. 3"
+                placeholder="urugero: 3"
                 value={chargerId}
                 onChange={e => setChargerId(e.target.value)}
               />
               <Input
-                label="Shift ID (optional)"
+                label="Shift ID / Zamu ID (si ngombwa)"
                 type="number"
-                placeholder="e.g. 12"
+                placeholder="urugero: 12"
                 value={shiftId}
                 onChange={e => setShiftId(e.target.value)}
               />
             </>
           )}
           <Input
-            label="Date From"
+            label="From / Kuva"
             type="date"
             value={dateFrom}
             onChange={e => setDateFrom(e.target.value)}
           />
           <Input
-            label="Date To"
+            label="To / Kugeza"
             type="date"
             value={dateTo}
             onChange={e => setDateTo(e.target.value)}
@@ -123,23 +123,23 @@ export const ReportPanel: React.FC<{
             <table className="w-full min-w-[900px]">
               <thead className="text-left border-b border-gray-100">
                 <tr className="text-xs text-gray-400 uppercase tracking-wider">
-                  <th className="pb-3 px-2">Staff</th>
-                  <th className="pb-3 px-2">Station</th>
+                  <th className="pb-3 px-2">Staff / Umukozi</th>
+                  <th className="pb-3 px-2">Station / Sitasiyo</th>
                   <th className="pb-3 px-2">Charger</th>
-                  <th className="pb-3 px-2">Plate</th>
-                  <th className="pb-3 px-2">Battery</th>
+                  <th className="pb-3 px-2">Plate / Plaque</th>
+                  <th className="pb-3 px-2">Battery / Batiri</th>
                   <th className="pb-3 px-2">kW</th>
-                  <th className="pb-3 px-2">Duration</th>
-                  <th className="pb-3 px-2">Paid</th>
-                  <th className="pb-3 px-2">Started</th>
-                  <th className="pb-3 px-2">Ended</th>
+                  <th className="pb-3 px-2">Time / Igihe</th>
+                  <th className="pb-3 px-2">Paid / Yishyuye</th>
+                  <th className="pb-3 px-2">Start / Itangira</th>
+                  <th className="pb-3 px-2">End / Iherezo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {sessionReport.rows.length === 0 && (
                   <tr>
                     <td colSpan={10} className="text-center py-8 text-gray-400">
-                      {sessionReport.loading ? "Loading report..." : "No data for these filters"}
+                      {sessionReport.loading ? "Tegereza..." : "No data / Nta makuru"}
                     </td>
                   </tr>
                 )}
@@ -175,24 +175,24 @@ export const ReportPanel: React.FC<{
             <table className="w-full min-w-[900px]">
               <thead className="text-left border-b border-gray-100">
                 <tr className="text-xs text-gray-400 uppercase tracking-wider">
-                  <th className="pb-3 px-2">Staff</th>
-                  <th className="pb-3 px-2">Station</th>
-                  <th className="pb-3 px-2">Start</th>
-                  <th className="pb-3 px-2">End</th>
+                  <th className="pb-3 px-2">Staff / Umukozi</th>
+                  <th className="pb-3 px-2">Station / Sitasiyo</th>
+                  <th className="pb-3 px-2">Start / Itangira</th>
+                  <th className="pb-3 px-2">End / Iherezo</th>
                   <th className="pb-3 px-2">Start Cashpower</th>
                   <th className="pb-3 px-2">End Cashpower</th>
-                  <th className="pb-3 px-2">Added</th>
-                  <th className="pb-3 px-2">Consumed</th>
-                  <th className="pb-3 px-2">Earned</th>
-                  <th className="pb-3 px-2">Money on Momo</th>
-                  <th className="pb-3 px-2">Cars Charged</th>
+                  <th className="pb-3 px-2">Added / Yongewe</th>
+                  <th className="pb-3 px-2">kW used / Zakoreshejwe</th>
+                  <th className="pb-3 px-2">Earned / Ayinjiye</th>
+                  <th className="pb-3 px-2">MoMo</th>
+                  <th className="pb-3 px-2">Cars / Imodoka</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {shiftReport.rows.length === 0 && (
                   <tr>
                     <td colSpan={11} className="text-center py-8 text-gray-400">
-                      {shiftReport.loading ? "Loading report..." : "No data for these filters"}
+                      {shiftReport.loading ? "Tegereza..." : "No data / Nta makuru"}
                     </td>
                   </tr>
                 )}

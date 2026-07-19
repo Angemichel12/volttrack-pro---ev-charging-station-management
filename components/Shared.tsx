@@ -162,7 +162,7 @@ export const EmptyState: React.FC<{
 
 // ─── Loading ──────────────────────────────────────────────────────────────────
 
-export const Loading: React.FC<{ label?: string }> = ({ label = "Loading..." }) => (
+export const Loading: React.FC<{ label?: string }> = ({ label = "Tegereza..." }) => (
   <div className="flex flex-col items-center justify-center py-16 text-gray-400">
     <svg className="animate-spin w-7 h-7 text-green-600 mb-3" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-20" />

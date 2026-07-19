@@ -23,14 +23,14 @@ export const Login: React.FC = () => {
             alt="GreenSpark Charging Rwanda"
             className="h-20 sm:h-24 w-auto object-contain mx-auto"
           />
-          <p className="text-gray-500 mt-4 text-sm">Sign in to manage your charging stations</p>
+          <p className="text-gray-500 mt-4 text-sm">Sign in / Injira</p>
         </div>
 
         {/* Form */}
         <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 sm:p-8">
           <form onSubmit={handleLogin} className="space-y-5">
             <Input
-              label="Phone Number"
+              label="Phone Number / Numero ya Telephone"
               type="tel"
               placeholder="07XX XXX XXX"
               value={phone_number}
@@ -39,9 +39,9 @@ export const Login: React.FC = () => {
               required
             />
             <Input
-              label="Password"
+              label="Password / Ijambobanga"
               type="password"
-              placeholder="Enter your password"
+              placeholder="Ijambobanga"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -51,7 +51,7 @@ export const Login: React.FC = () => {
               className="w-full py-3 text-base"
               disabled={loading}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? "Tegereza..." : "Sign In / Injira"}
             </Button>
           </form>
         </div>

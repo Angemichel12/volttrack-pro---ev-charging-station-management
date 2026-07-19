@@ -39,10 +39,10 @@ export const useCars = () => {
     try {
       const res = await api.post("api/cars/", payload);
       setCars(prev => [...prev, res.data.data]);
-      successToast("Car added");
+      successToast("Car added / Imodoka yanditswe");
       return true;
     } catch (e: any) {
-      errorToast(e?.response?.data?.message || "Failed to add car");
+      errorToast(e?.response?.data?.message || "Failed to add car / Byanze");
       return false;
     }
   };
@@ -51,7 +51,7 @@ export const useCars = () => {
     try {
       const res = await api.patch(`api/cars/${id}/`, payload);
       setCars(prev => prev.map(c => c.id === id ? res.data.data : c));
-      successToast("Car updated");
+      successToast("Car updated / Imodoka yahinduwe");
       return true;
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to update car");
@@ -63,7 +63,7 @@ export const useCars = () => {
     try {
       await api.delete(`api/cars/${id}/`);
       setCars(prev => prev.filter(c => c.id !== id));
-      successToast("Car deleted");
+      successToast("Car deleted / Imodoka yasibwe");
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to delete car");
     }

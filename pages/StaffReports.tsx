@@ -8,9 +8,9 @@ import { ReportPanel } from "./DetailedReports";
 type Tab = "chargers" | "sessions" | "shifts";
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: "chargers", label: "Charger Usage" },
-  { key: "sessions", label: "Sessions" },
-  { key: "shifts", label: "Shifts" },
+  { key: "chargers", label: "Chargers" },
+  { key: "sessions", label: "Sessions / Gusharija" },
+  { key: "shifts", label: "Shifts / Zamu" },
 ];
 
 export const StaffReports: React.FC = () => {
@@ -31,8 +31,8 @@ export const StaffReports: React.FC = () => {
 
       {/* ── Header ───────────────────────────────────────────────── */}
       <PageHeader
-        title="My Reports"
-        subtitle="Review your work, filter the details, and download Excel or PDF"
+        title="Reports / Raporo"
+        subtitle="Download Excel / PDF"
       />
 
       {loading ? (
@@ -47,18 +47,18 @@ export const StaffReports: React.FC = () => {
           {/* ── Summary Stats ─────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <StatCard
-              label="Total earnings"
+              label="Earnings / Ayinjiye"
               value={rwf(summary?.total_earnings)}
               icon={<IconMoney className="w-5 h-5" />}
               tone="green"
             />
             <StatCard
-              label="kW consumed"
+              label="kW used / kW zakoreshejwe"
               value={kw(summary?.total_watt)}
               icon={<IconBolt className="w-5 h-5" />}
             />
             <StatCard
-              label="Total sessions"
+              label="Sessions / Gusharija"
               value={summary?.total_sessions ?? 0}
               icon={<IconCharger className="w-5 h-5" />}
             />
@@ -95,7 +95,7 @@ export const StaffReports: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {chargers.length === 0 && (
                   <div className="col-span-full text-center py-12 border border-dashed rounded-2xl text-gray-400">
-                    No charger data yet
+                    No data / Nta makuru
                   </div>
                 )}
                 {chargers.map((c: any) => (
@@ -111,7 +111,7 @@ export const StaffReports: React.FC = () => {
                     </div>
                     <div className="mt-2">
                       <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">
-                        Total Earnings
+                        Earnings / Ayinjiye
                       </p>
                       <p className="text-2xl font-bold text-green-700">
                         {rwf(c.earnings)}
@@ -123,15 +123,15 @@ export const StaffReports: React.FC = () => {
 
               {/* Charger table */}
               {chargers.length > 0 && (
-                <Card title="Charger Summary">
+                <Card title="Chargers">
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[480px]">
                       <thead className="text-left border-b border-gray-100">
                         <tr className="text-xs text-gray-400 uppercase tracking-wider">
                           <th className="pb-3 px-2">Charger</th>
-                          <th className="pb-3 px-2">Sessions</th>
-                          <th className="pb-3 px-2">Earnings</th>
-                          <th className="pb-3 px-2">% Share</th>
+                          <th className="pb-3 px-2">Sessions / Gusharija</th>
+                          <th className="pb-3 px-2">Earnings / Ayinjiye</th>
+                          <th className="pb-3 px-2">%</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">

@@ -11,10 +11,10 @@ import { useAdminStations } from "../hooks/useAdmin";
 // ─── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
 
 const RANGE_PRESETS = [
-  { label: "7 days", days: 7 },
-  { label: "30 days", days: 30 },
-  { label: "90 days", days: 90 },
-  { label: "All time", days: 0 },
+  { label: "Iminsi 7", days: 7 },
+  { label: "Iminsi 30", days: 30 },
+  { label: "Iminsi 90", days: 90 },
+  { label: "All / Byose", days: 0 },
 ] as const;
 
 const daysAgoISO = (days: number): string => {
@@ -60,7 +60,7 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" subtitle="Performance across all your stations" />
+      <PageHeader title="Dashboard / Ahabanza" subtitle="All stations / Sitasiyo zose" />
 
       {/* ── Filters — scope everything below ──────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
@@ -82,7 +82,7 @@ export const AdminDashboard: React.FC = () => {
           value={stationId}
           onChange={e => setStationId(e.target.value)}
         >
-          <option value="">All stations</option>
+          <option value="">All / Zose</option>
           {stations.map(st => (
             <option key={st.id} value={st.id}>{st.name}</option>
           ))}
@@ -105,42 +105,41 @@ export const AdminDashboard: React.FC = () => {
 
           {/* ── KPI tiles ─────────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <StatCard label="Total revenue" value={rwf(summary?.total_revenue)} icon={<IconMoney className="w-5 h-5" />} tone="green" />
-            <StatCard label="Expenses" value={rwf(summary?.total_expenses)} icon={<IconWallet className="w-5 h-5" />} />
+            <StatCard label="Revenue / Ayinjiye" value={rwf(summary?.total_revenue)} icon={<IconMoney className="w-5 h-5" />} tone="green" />
+            <StatCard label="Expenses / Ibyasohotse" value={rwf(summary?.total_expenses)} icon={<IconWallet className="w-5 h-5" />} />
             <StatCard
-              label="Net revenue"
+              label="Net / Inyungu"
               value={rwf(summary?.net_revenue)}
               icon={<IconChart className="w-5 h-5" />}
               tone={num(summary?.net_revenue) < 0 ? "red" : "default"}
             />
-            <StatCard label="Energy used" value={kw(summary?.total_kwatt_used)} icon={<IconBolt className="w-5 h-5" />} />
-            <StatCard label="Charging sessions" value={num(summary?.total_sessions).toLocaleString()} icon={<IconCharger className="w-5 h-5" />} />
-            <StatCard label="Shifts worked" value={num(summary?.total_shifts).toLocaleString()} icon={<IconShift className="w-5 h-5" />} />
+            <StatCard label="kW used / kW zakoreshejwe" value={kw(summary?.total_kwatt_used)} icon={<IconBolt className="w-5 h-5" />} />
+            <StatCard label="Sessions / Gusharija" value={num(summary?.total_sessions).toLocaleString()} icon={<IconCharger className="w-5 h-5" />} />
+            <StatCard label="Shifts / Zamu" value={num(summary?.total_shifts).toLocaleString()} icon={<IconShift className="w-5 h-5" />} />
           </div>
 
           {!hasData ? (
             <EmptyState
               icon={<IconChart className="w-6 h-6" />}
-              title="No activity in this period"
-              hint="Try a wider date range, or check back once charging sessions have been recorded."
+              title="No data / Nta makuru"
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
               {/* ── Revenue trend ─────────────────────────────────── */}
-              <Card title="Revenue per day" className="lg:col-span-3">
+              <Card title="Revenue per day / Ayinjiye ku munsi" className="lg:col-span-3">
                 {trendPoints.length > 0 ? (
                   <TrendChart data={trendPoints} unit="Rwf" />
                 ) : (
-                  <p className="text-center text-sm text-gray-400 py-10">No revenue in this period</p>
+                  <p className="text-center text-sm text-gray-400 py-10">No data / Nta makuru</p>
                 )}
               </Card>
 
               {/* ── Station usage ─────────────────────────────────── */}
-              <Card title="Revenue by station" className="lg:col-span-2">
+              <Card title="Per station / Kuri buri sitasiyo" className="lg:col-span-2">
                 {usageRows.length > 0 ? (
                   <BarList rows={usageRows} unit="Rwf" />
                 ) : (
-                  <p className="text-center text-sm text-gray-400 py-10">No station activity yet</p>
+                  <p className="text-center text-sm text-gray-400 py-10">No data / Nta makuru</p>
                 )}
               </Card>
             </div>

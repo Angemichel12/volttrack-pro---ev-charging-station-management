@@ -63,7 +63,7 @@ export const ExpensesPage: React.FC = () => {
   };
 
   const handleDelete = (x: Expense) => {
-    if (window.confirm(`Delete expense "${x.description}"? This cannot be undone.`)) {
+    if (window.confirm(`Delete / Siba "${x.description}"?`)) {
       deleteExpense(x.id);
     }
   };
@@ -73,11 +73,10 @@ export const ExpensesPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Expenses"
-        subtitle="Track per-station operating costs"
+        title="Expenses / Ibyasohotse"
         actions={
           <Button onClick={openAdd}>
-            <IconPlus className="w-4 h-4" /> Add Expense
+            <IconPlus className="w-4 h-4" /> Add / Ongera
           </Button>
         }
       />
@@ -85,22 +84,22 @@ export const ExpensesPage: React.FC = () => {
       {/* ── Filters ───────────────────────────────────────────────── */}
       <Card padded>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Select label="Station" value={stationFilter} onChange={e => setStationFilter(e.target.value)}>
-            <option value="">All stations</option>
+          <Select label="Station / Sitasiyo" value={stationFilter} onChange={e => setStationFilter(e.target.value)}>
+            <option value="">All / Zose</option>
             {stations.map(st => (
               <option key={st.id} value={st.id}>{st.name}</option>
             ))}
           </Select>
-          <Input label="From" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          <Input label="To" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+          <Input label="From / Kuva" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <Input label="To / Kugeza" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
         </div>
       </Card>
 
       {/* ── Totals ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <StatCard label="Amount (VAT excl.)" value={rwf(totals.amount)} icon={<IconMoney className="w-5 h-5" />} />
-        <StatCard label="Input VAT" value={rwf(totals.vat)} icon={<IconChart className="w-5 h-5" />} />
-        <StatCard label="Total outlay" value={rwf(totals.total)} icon={<IconWallet className="w-5 h-5" />} tone="red" />
+        <StatCard label="Amount (no VAT)" value={rwf(totals.amount)} icon={<IconMoney className="w-5 h-5" />} />
+        <StatCard label="VAT / TVA" value={rwf(totals.vat)} icon={<IconChart className="w-5 h-5" />} />
+        <StatCard label="Total / Yose" value={rwf(totals.total)} icon={<IconWallet className="w-5 h-5" />} tone="red" />
       </div>
 
       {/* ── List ──────────────────────────────────────────────────── */}
@@ -109,13 +108,12 @@ export const ExpensesPage: React.FC = () => {
       ) : expenses.length === 0 ? (
         <EmptyState
           icon={<IconWallet className="w-6 h-6" />}
-          title="No expenses recorded"
-          hint="Expenses you record will appear here. Use the filters above to narrow by station or date."
-          action={<Button onClick={openAdd}><IconPlus className="w-4 h-4" /> Add Expense</Button>}
+          title="No expenses / Nta byasohotse"
+          action={<Button onClick={openAdd}><IconPlus className="w-4 h-4" /> Add / Ongera</Button>}
         />
       ) : (
         <Card>
-          <Table headers={["Date", "Station", "Description", "Amount (VAT excl.)", "VAT", "Total", ""]}>
+          <Table headers={["Date / Itariki", "Station / Sitasiyo", "Description / Ibisobanuro", "Amount / Umubare", "VAT / TVA", "Total / Yose", ""]}>
             {expenses.map(x => {
               const amount = parseFloat(x.amount_vat_exclusive || "0");
               const vat = parseFloat(x.input_vat || "0");
@@ -155,51 +153,48 @@ export const ExpensesPage: React.FC = () => {
       )}
 
       {/* ── Add / Edit modal ──────────────────────────────────────── */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Edit Expense" : "New Expense"}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Edit / Hindura" : "New Expense / Ikindi Cyasohotse"}>
         <div className="space-y-4">
           <Select
-            label="Station"
+            label="Station / Sitasiyo"
             value={form.station || ""}
             onChange={e => setForm({ ...form, station: e.target.value ? parseInt(e.target.value) : 0 })}
           >
-            <option value="">Select station...</option>
+            <option value="">Hitamo sitasiyo...</option>
             {stations.map(st => (
               <option key={st.id} value={st.id}>{st.name}</option>
             ))}
           </Select>
           <Input
-            label="Description"
-            placeholder="e.g. Generator fuel"
+            label="Description / Ibisobanuro"
+            placeholder="urugero: Lisansi"
             value={form.description}
             onChange={e => setForm({ ...form, description: e.target.value })}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Amount (VAT exclusive)"
+              label="Amount (no VAT) / Umubare"
               type="number"
               min={0}
-              placeholder="e.g. 25000"
+              placeholder="urugero: 25000"
               value={form.amount_vat_exclusive}
               onChange={e => setForm({ ...form, amount_vat_exclusive: e.target.value })}
             />
             <Input
-              label="Input VAT"
+              label="VAT / TVA"
               type="number"
               min={0}
-              placeholder="e.g. 4500"
+              placeholder="urugero: 4500"
               value={form.input_vat}
               onChange={e => setForm({ ...form, input_vat: e.target.value })}
             />
           </div>
-          {!editing && (
-            <p className="text-xs text-gray-400">The date is recorded automatically when the expense is saved.</p>
-          )}
           <Button
             className="w-full"
             onClick={handleSave}
             disabled={saving || !form.station || !form.description.trim() || !form.amount_vat_exclusive}
           >
-            {saving ? "Saving..." : editing ? "Save Changes" : "Record Expense"}
+            {saving ? "Tegereza..." : "Save / Bika"}
           </Button>
         </div>
       </Modal>

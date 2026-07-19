@@ -119,20 +119,20 @@ export const StaffSessionsPage: React.FC = () => {
     refreshChargers();
   };
 
-  if (dashLoading) return <Loading label="Loading sessions..." />;
+  if (dashLoading) return <Loading label="Tegereza..." />;
 
   // ── No open shift — can't charge yet ───────────────────────────
   if (!openShift) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Charging Sessions" subtitle="Start and manage car charging" />
+        <PageHeader title="Sessions / Gusharija" subtitle="Charge cars / Sharija imodoka" />
         <EmptyState
           icon={<IconShift className="w-6 h-6" />}
-          title="No open shift"
-          hint="You need to open a shift before you can start charging sessions."
+          title="No open shift / Nta zamu ifunguye"
+          hint="Open a shift first. / Banza ufungure zamu."
           action={
             <Button onClick={() => navigate("/staff/shift")}>
-              Open a Shift
+              Open Shift / Fungura Zamu
             </Button>
           }
         />
@@ -144,38 +144,38 @@ export const StaffSessionsPage: React.FC = () => {
     <div className="space-y-6">
 
       <PageHeader
-        title="Charging Sessions"
+        title="Sessions / Gusharija"
         subtitle={`${data!.station.name} · ${data!.charger_count} charger${data!.charger_count === 1 ? "" : "s"}`}
-        actions={<Badge tone="green" pulse>Shift open</Badge>}
+        actions={<Badge tone="green" pulse>On duty / Uri ku zamu</Badge>}
       />
 
       {/* ── Start Session banner ──────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-gradient-to-r from-green-700 to-green-600 text-white rounded-2xl px-5 sm:px-6 py-5 shadow-sm">
         <div>
-          <h3 className="font-bold text-lg">Start a Charging Session</h3>
-          <p className="text-sm text-white/80 mt-0.5">Search or register a car, then pick an available charger.</p>
+          <h3 className="font-bold text-lg">Start Charging / Tangira Gusharija</h3>
+          <p className="text-sm text-white/80 mt-0.5">Car + charger. / Imodoka + charger.</p>
         </div>
         <Button
           onClick={() => setModalOpen(true)}
           className="!bg-white !text-green-800 font-bold hover:!bg-green-50 shrink-0 w-full sm:w-auto"
         >
-          <IconPlus className="w-4 h-4" /> New Charging Session
+          <IconPlus className="w-4 h-4" /> Start / Tangira
         </Button>
       </div>
 
-      <Modal open={modalOpen} onClose={closeModal} title="New Charging Session">
+      <Modal open={modalOpen} onClose={closeModal} title="Start Charging / Tangira Gusharija">
         <div className="space-y-4">
           {/* ── Step 1: the car ────────────────────────────────────── */}
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Step 1 · Car</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">1 · Car / Imodoka</p>
           <div>
             <Input
-              label="Car Plate Number"
-              placeholder="Type to search..."
+              label="Plate Number / Plaque"
+              placeholder="Shakisha..."
               value={plateQuery}
               onChange={e => handlePlateQueryChange(e.target.value)}
               autoFocus
             />
-            {searching && <p className="text-xs text-gray-400 mt-1">Searching...</p>}
+            {searching && <p className="text-xs text-gray-400 mt-1">Birashakisha...</p>}
             {!selectedCar && suggestions.length > 0 && (
               <div className="mt-1 border border-gray-200 rounded-xl divide-y divide-gray-100 max-h-40 overflow-y-auto shadow-sm">
                 {suggestions.map(car => (
@@ -206,21 +206,21 @@ export const StaffSessionsPage: React.FC = () => {
 
           {!selectedCar && !searching && plateQuery.trim() && suggestions.length === 0 && (
             <div className="p-4 bg-gray-50 rounded-xl space-y-3">
-              <p className="text-sm font-medium text-gray-700">New car — register it first:</p>
+              <p className="text-sm font-medium text-gray-700">New car / Imodoka nshya:</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
-                  label="Owner Name (optional)"
+                  label="Owner / Nyir'imodoka (si ngombwa)"
                   value={ownerNameInput}
                   onChange={e => setOwnerNameInput(e.target.value)}
                 />
                 <Input
-                  label="Owner Phone (optional)"
+                  label="Phone / Telephone (si ngombwa)"
                   value={carPhoneInput}
                   onChange={e => setCarPhoneInput(e.target.value)}
                 />
               </div>
               <Input
-                label="Notes (optional)"
+                label="Notes / Ibindi (si ngombwa)"
                 value={carInfoInput}
                 onChange={e => setCarInfoInput(e.target.value)}
               />
@@ -230,31 +230,31 @@ export const StaffSessionsPage: React.FC = () => {
                 disabled={registering || carLoading}
                 className="w-full sm:w-auto"
               >
-                {registering ? "Registering..." : `Register "${plateQuery.trim().toUpperCase()}"`}
+                {registering ? "Tegereza..." : `Register / Andika "${plateQuery.trim().toUpperCase()}"`}
               </Button>
             </div>
           )}
 
           {/* ── Step 2: charger — full when charging 2 cars ────────── */}
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider pt-2">Step 2 · Charger</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider pt-2">2 · Charger</p>
           <div>
             {chargersLoading ? (
               <div className="w-full px-4 py-2.5 rounded-xl bg-gray-50 text-gray-400 text-sm animate-pulse">
-                Loading chargers...
+                Tegereza...
               </div>
             ) : chargers.length === 0 ? (
               <div className="w-full px-4 py-2.5 rounded-xl bg-gray-50 text-gray-400 text-sm">
-                No chargers at your station
+                No chargers / Nta charger ihari
               </div>
             ) : (
               <Select label="Charger" value={chargerId} onChange={e => setChargerId(e.target.value)}>
-                <option value="">Choose charger...</option>
+                <option value="">Hitamo charger...</option>
                 {chargers.map(c => {
                   const carsCharging = c.ports.filter(p => !p.available).length;
                   const full = carsCharging >= c.ports.length;
                   return (
                     <option key={c.id} value={c.id} disabled={full}>
-                      {c.name} — {full ? "Full" : carsCharging > 0 ? `${carsCharging} car charging` : "Available"}
+                      {c.name} — {full ? "Full / Yuzuye" : carsCharging > 0 ? `Imodoka ${carsCharging} irasharija` : "Free / Irahari"}
                     </option>
                   );
                 })}
@@ -263,13 +263,13 @@ export const StaffSessionsPage: React.FC = () => {
           </div>
 
           {/* ── Step 3: battery + start ────────────────────────────── */}
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider pt-2">Step 3 · Battery</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider pt-2">3 · Battery / Batiri</p>
           <Input
-            label="Starting Car %"
+            label="Battery now (%) / Batiri ubu"
             type="number"
             min={0}
             max={100}
-            placeholder="e.g. 20"
+            placeholder="urugero: 20"
             value={startPctInput}
             onChange={e => setStartPctInput(e.target.value)}
           />
@@ -280,7 +280,7 @@ export const StaffSessionsPage: React.FC = () => {
             disabled={!selectedCar || !chargerId || !startPctInput || starting}
           >
             <IconBolt className="w-4 h-4" />
-            {starting ? "Starting..." : "Start Session"}
+            {starting ? "Tegereza..." : "Start / Tangira"}
           </Button>
         </div>
       </Modal>
@@ -288,15 +288,14 @@ export const StaffSessionsPage: React.FC = () => {
       {/* ── Active Sessions ───────────────────────────────────────── */}
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Active Sessions</h3>
-          {activeSessions.length > 0 && <Badge tone="green" pulse>{activeSessions.length} charging</Badge>}
-          {sessionsLoading && <span className="text-sm font-normal text-gray-400">Loading...</span>}
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Charging Now / Ibirasharija</h3>
+          {activeSessions.length > 0 && <Badge tone="green" pulse>{activeSessions.length}</Badge>}
+          {sessionsLoading && <span className="text-sm font-normal text-gray-400">Tegereza...</span>}
         </div>
         {activeSessions.length === 0 ? (
           <EmptyState
             icon={<IconCharger className="w-6 h-6" />}
-            title="No cars charging right now"
-            hint="Start a session above when a car arrives."
+            title="No cars charging / Nta modoka irasharija"
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -313,23 +312,23 @@ export const StaffSessionsPage: React.FC = () => {
                       <IconBattery className="w-3.5 h-3.5" /> {session.starting_car_percentage}%
                     </p>
                   </div>
-                  <Badge tone="green" pulse>Charging</Badge>
+                  <Badge tone="green" pulse>Charging / Irasharija</Badge>
                 </div>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <Input
-                      label="kW consumed"
+                      label="kW used / kW zakoreshejwe"
                       type="number"
-                      placeholder="kW used"
+                      placeholder="kW"
                       value={wattInput[session.id] || ""}
                       onChange={e => setWattInput({ ...wattInput, [session.id]: e.target.value })}
                     />
                     <Input
-                      label="Ending car %"
+                      label="Battery now (%) / Batiri ubu"
                       type="number"
                       min={0}
                       max={100}
-                      placeholder="e.g. 90"
+                      placeholder="urugero: 90"
                       value={endPctInput[session.id] || ""}
                       onChange={e => setEndPctInput({ ...endPctInput, [session.id]: e.target.value })}
                     />
@@ -339,7 +338,7 @@ export const StaffSessionsPage: React.FC = () => {
                     onClick={() => handleEnd(session.id)}
                     disabled={!wattInput[session.id] || !endPctInput[session.id] || endingId === session.id}
                   >
-                    {endingId === session.id ? "Calculating..." : "End & Calculate Price"}
+                    {endingId === session.id ? "Tegereza..." : "Finish / Rangiza"}
                   </Button>
                 </div>
               </Card>
@@ -349,24 +348,24 @@ export const StaffSessionsPage: React.FC = () => {
       </div>
 
       {/* ── Session complete — calculated price popup ─────────────── */}
-      <Modal open={endedSession !== null} onClose={() => setEndedSession(null)} title="Session Complete">
+      <Modal open={endedSession !== null} onClose={() => setEndedSession(null)} title="Done / Byarangiye">
         {endedSession && (
           <div className="space-y-5">
             <div className="text-center py-2">
               <div className="mx-auto w-12 h-12 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center mb-3">
                 <IconMoney className="w-6 h-6" />
               </div>
-              <p className="text-sm text-gray-500">Amount to collect</p>
+              <p className="text-sm text-gray-500">To collect / Amafaranga yo kwakira</p>
               <p className="text-4xl font-bold text-green-700 mt-1">{rwf(endedSession.total_price)}</p>
             </div>
 
             <div className="bg-gray-50 rounded-xl divide-y divide-gray-100 text-sm">
               {[
-                ["Car", endedSession.car_plate],
+                ["Car / Imodoka", endedSession.car_plate],
                 ["Charger", endedSession.charger_name],
-                ["Energy", endedSession.watt_consumed ? kw(endedSession.watt_consumed) : "—"],
-                ["Battery", `${endedSession.starting_car_percentage}% → ${endedSession.ending_car_percentage ?? "—"}%`],
-                ["Duration", endedSession.duration ?? "—"],
+                ["Energy / Umuriro", endedSession.watt_consumed ? kw(endedSession.watt_consumed) : "—"],
+                ["Battery / Batiri", `${endedSession.starting_car_percentage}% → ${endedSession.ending_car_percentage ?? "—"}%`],
+                ["Time / Igihe", endedSession.duration ?? "—"],
               ].map(([label, val]) => (
                 <div key={String(label)} className="flex justify-between px-4 py-2.5">
                   <span className="text-gray-500">{label}</span>
@@ -376,7 +375,7 @@ export const StaffSessionsPage: React.FC = () => {
             </div>
 
             <Button className="w-full py-3" onClick={() => setEndedSession(null)}>
-              <IconCheck className="w-4 h-4" /> Okay
+              <IconCheck className="w-4 h-4" /> OK / Sawa
             </Button>
           </div>
         )}

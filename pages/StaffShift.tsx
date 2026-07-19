@@ -53,57 +53,56 @@ export const StaffShiftPage: React.FC = () => {
     }
   };
 
-  if (dashLoading) return <Loading label="Checking your shift..." />;
+  if (dashLoading) return <Loading label="Tegereza..." />;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="My Shift"
-        subtitle={openShift ? `On duty at ${openShift.station_name}` : "Open a shift to start charging cars"}
-        actions={openShift ? <Badge tone="green" pulse>Shift open</Badge> : <Badge tone="gray">Off duty</Badge>}
+        title="My Shift / Zamu Yanjye"
+        subtitle={openShift ? `${openShift.station_name}` : "Open a shift / Fungura zamu"}
+        actions={openShift ? <Badge tone="green" pulse>On duty / Uri ku zamu</Badge> : <Badge tone="gray">Off duty / Nta zamu</Badge>}
       />
 
       {/* ── Station summary (only while a shift is open) ──────────── */}
       {openShift && data && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatCard label="Station" value={data.station.name} icon={<IconStation className="w-5 h-5" />} />
+          <StatCard label="Station / Sitasiyo" value={data.station.name} icon={<IconStation className="w-5 h-5" />} />
           <StatCard label="Chargers" value={data.charger_count} icon={<IconCharger className="w-5 h-5" />} />
-          <StatCard label="Earnings this shift" value={rwf(data.total_earnings)} icon={<IconMoney className="w-5 h-5" />} tone="green" />
-          <StatCard label="Sessions" value={data.total_sessions ?? 0} icon={<IconBolt className="w-5 h-5" />} />
+          <StatCard label="Earnings / Ayinjiye" value={rwf(data.total_earnings)} icon={<IconMoney className="w-5 h-5" />} tone="green" />
+          <StatCard label="Sessions / Gusharija" value={data.total_sessions ?? 0} icon={<IconBolt className="w-5 h-5" />} />
         </div>
       )}
 
       {!openShift ? (
         /* ── Open a new shift ────────────────────────────────────── */
-        <Card title="Open a New Shift">
+        <Card title="Open Shift / Fungura Zamu">
           <div className="space-y-4">
             <p className="text-sm text-gray-500 -mt-1">
-              Pick your station and enter the CashPower meter reading to begin. You'll be taken straight
-              to charging sessions once your shift is open.
+              Pick station, enter Cashpower. / Hitamo sitasiyo, andika Cashpower.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {stationsLoading ? (
                 <div className="w-full px-4 py-2.5 rounded-xl bg-gray-50 text-gray-400 text-sm animate-pulse">
-                  Loading stations...
+                  Tegereza...
                 </div>
               ) : (
-                <Select label="Station" value={stationId} onChange={e => setStationId(e.target.value)}>
-                  <option value="">Select station...</option>
+                <Select label="Station / Sitasiyo" value={stationId} onChange={e => setStationId(e.target.value)}>
+                  <option value="">Hitamo sitasiyo...</option>
                   {stations.map(st => (
                     <option key={st.id} value={st.id}>{st.name}</option>
                   ))}
                 </Select>
               )}
               <Input
-                label="Starting Cashpower (kW)"
+                label="Start Cashpower (kW) / Cashpower utangira"
                 type="number"
-                placeholder="e.g. 1250"
+                placeholder="urugero: 1250"
                 value={cashpowerStartInput}
                 onChange={e => setCashpowerStartInput(e.target.value)}
               />
               <Input
-                label="Notes (optional)"
-                placeholder="Shift notes..."
+                label="Notes / Ibindi (si ngombwa)"
+                placeholder="..."
                 value={shiftNotes}
                 onChange={e => setShiftNotes(e.target.value)}
               />
@@ -113,7 +112,7 @@ export const StaffShiftPage: React.FC = () => {
                   onClick={handleOpenShift}
                   disabled={shiftLoading || !stationId || !cashpowerStartInput}
                 >
-                  {shiftLoading ? "Opening..." : "Open Shift"}
+                  {shiftLoading ? "Tegereza..." : "Open Shift / Fungura Zamu"}
                   <IconArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -122,13 +121,13 @@ export const StaffShiftPage: React.FC = () => {
         </Card>
       ) : (
         /* ── Manage / close the open shift ───────────────────────── */
-        <Card title="Current Shift">
+        <Card title="Current Shift / Zamu ya None">
           <div className="space-y-5">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
               {[
-                ["Started", new Date(openShift.shift_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })],
-                ["Station", openShift.station_name],
-                ["Starting Cashpower (kW)", openShift.start_kwatts_in_cashpower],
+                ["Started / Yatangiye", new Date(openShift.shift_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })],
+                ["Station / Sitasiyo", openShift.station_name],
+                ["Start Cashpower (kW)", openShift.start_kwatts_in_cashpower],
                 ["Added Cashpower (kW)", openShift.addition_kwatt_in_cashpower],
               ].map(([label, val]) => (
                 <div key={String(label)} className="bg-green-50/70 rounded-xl p-3">
@@ -141,25 +140,24 @@ export const StaffShiftPage: React.FC = () => {
             {/* Go charge cars */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-gradient-to-r from-green-700 to-green-600 text-white rounded-2xl px-5 py-4">
               <div>
-                <h3 className="font-bold">Ready to charge</h3>
-                <p className="text-sm text-white/80">Start and manage charging sessions for this shift.</p>
+                <h3 className="font-bold">Ready to charge / Witeguye gusharija</h3>
               </div>
               <Button
                 onClick={() => navigate("/staff/sessions")}
                 className="!bg-white !text-green-800 font-bold hover:!bg-green-50 shrink-0 w-full sm:w-auto"
               >
-                Go to Sessions <IconArrowRight className="w-4 h-4" />
+                Sessions / Gusharija <IconArrowRight className="w-4 h-4" />
               </Button>
             </div>
 
             {/* Add cashpower mid-shift */}
             <div className="pt-4 border-t border-gray-100">
-              <p className="text-sm font-semibold text-gray-700 mb-3">Top up CashPower mid-shift</p>
+              <p className="text-sm font-semibold text-gray-700 mb-3">Add Cashpower / Kongera Cashpower</p>
               <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
                 <Input
-                  label="Amount to add (kW)"
+                  label="kW to add / kW zo kongera"
                   type="number"
-                  placeholder="e.g. 50"
+                  placeholder="urugero: 50"
                   value={cashpowerAddInput}
                   onChange={e => setCashpowerAddInput(e.target.value)}
                 />
@@ -169,36 +167,35 @@ export const StaffShiftPage: React.FC = () => {
                   disabled={shiftLoading || !cashpowerAddInput}
                   className="shrink-0"
                 >
-                  <IconPlus className="w-4 h-4" /> Add
+                  <IconPlus className="w-4 h-4" /> Add / Ongera
                 </Button>
               </div>
             </div>
 
             {/* Close shift */}
             <div className="pt-4 border-t border-gray-100">
-              <p className="text-sm font-semibold text-gray-700 mb-1">Close shift</p>
+              <p className="text-sm font-semibold text-gray-700 mb-1">Close Shift / Funga Zamu</p>
               <p className="text-xs text-gray-400 mb-3">
-                Enter the MoMo cash collected and the actual CashPower meter reading — totals are calculated
-                automatically. You must close your shift before logging out.
+                Enter MoMo money and end Cashpower. / Andika amafaranga ya MoMo na Cashpower usoza.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Input
-                  label="Money on MoMo (Rwf)"
+                  label="Money on MoMo (Rwf) / Amafaranga kuri MoMo"
                   type="number"
-                  placeholder="e.g. 13800"
+                  placeholder="urugero: 13800"
                   value={moneyOnMomoInput}
                   onChange={e => setMoneyOnMomoInput(e.target.value)}
                 />
                 <Input
-                  label="Ending Cashpower reading (kW)"
+                  label="End Cashpower (kW) / Cashpower usoza"
                   type="number"
-                  placeholder="e.g. 1250"
+                  placeholder="urugero: 1250"
                   value={endCashpowerInput}
                   onChange={e => setEndCashpowerInput(e.target.value)}
                 />
                 <Input
-                  label="Closing notes (optional)"
-                  placeholder="Any notes..."
+                  label="Notes / Ibindi (si ngombwa)"
+                  placeholder="..."
                   value={shiftNotes}
                   onChange={e => setShiftNotes(e.target.value)}
                 />
@@ -209,7 +206,7 @@ export const StaffShiftPage: React.FC = () => {
                 disabled={shiftLoading || !moneyOnMomoInput || !endCashpowerInput}
                 className="mt-3 w-full sm:w-auto"
               >
-                {shiftLoading ? "Closing..." : "Close Shift"}
+                {shiftLoading ? "Tegereza..." : "Close Shift / Funga Zamu"}
               </Button>
             </div>
           </div>

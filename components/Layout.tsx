@@ -15,20 +15,20 @@ interface NavItem {
 
 const NAV_ITEMS: Record<string, NavItem[]> = {
   admin: [
-    { label: 'Dashboard', path: '/admin/dashboard', icon: IconDashboard },
-    { label: 'Stations',  path: '/admin/stations',  icon: IconStation },
-    { label: 'Chargers',  path: '/admin/chargers',  icon: IconCharger },
-    { label: 'Employees', path: '/admin/employees', icon: IconUsers },
-    { label: 'Cars',      path: '/admin/cars',      icon: IconCar },
-    { label: 'Expenses',  path: '/admin/expenses',  icon: IconWallet },
-    { label: 'Reports',   path: '/admin/reports',   icon: IconChart },
+    { label: 'Dashboard / Ahabanza', path: '/admin/dashboard', icon: IconDashboard },
+    { label: 'Stations / Sitasiyo',  path: '/admin/stations',  icon: IconStation },
+    { label: 'Chargers',             path: '/admin/chargers',  icon: IconCharger },
+    { label: 'Employees / Abakozi',  path: '/admin/employees', icon: IconUsers },
+    { label: 'Cars / Imodoka',       path: '/admin/cars',      icon: IconCar },
+    { label: 'Expenses / Ibyasohotse', path: '/admin/expenses', icon: IconWallet },
+    { label: 'Reports / Raporo',     path: '/admin/reports',   icon: IconChart },
   ],
   staff: [
-    { label: 'Shift',     path: '/staff/shift',     icon: IconShift },
-    { label: 'Sessions',  path: '/staff/sessions',  icon: IconBolt },
-    { label: 'Cars',      path: '/staff/cars',      icon: IconCar },
-    { label: 'History',   path: '/staff/history',   icon: IconHistory },
-    { label: 'Reports',   path: '/staff/reports',   icon: IconChart },
+    { label: 'Shift / Zamu',         path: '/staff/shift',     icon: IconShift },
+    { label: 'Sessions / Gusharija', path: '/staff/sessions',  icon: IconBolt },
+    { label: 'Cars / Imodoka',       path: '/staff/cars',      icon: IconCar },
+    { label: 'History / Amateka',    path: '/staff/history',   icon: IconHistory },
+    { label: 'Reports / Raporo',     path: '/staff/reports',   icon: IconChart },
   ],
 };
 
@@ -89,7 +89,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             onClick={logout}
             className="mt-1 w-full flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
           >
-            <IconLogout className="w-5 h-5" /> Logout
+            <IconLogout className="w-5 h-5" /> Logout / Sohoka
           </button>
         </div>
       </aside>
@@ -145,7 +145,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               onClick={logout}
               className="w-full flex items-center justify-center gap-2 px-4 py-3.5 text-base font-bold text-red-600 bg-red-50 rounded-2xl"
             >
-              <IconLogout className="w-5 h-5" /> Logout
+              <IconLogout className="w-5 h-5" /> Logout / Sohoka
             </button>
           </div>
         </div>
@@ -171,7 +171,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               }`}
             >
               <item.icon className="w-6 h-6" />
-              <span className="text-[10px] font-semibold">{item.label}</span>
+              <span className="text-[9px] font-semibold leading-tight text-center px-0.5">{item.label}</span>
             </button>
           );
         })}
@@ -180,7 +180,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           className={`flex flex-col items-center justify-center gap-0.5 py-2 ${mobileMenuOpen ? 'text-green-700' : 'text-gray-400'}`}
         >
           <IconMore className="w-6 h-6" />
-          <span className="text-[10px] font-semibold">More</span>
+          <span className="text-[9px] font-semibold leading-tight text-center px-0.5">More / Ibindi</span>
         </button>
       </nav>
 

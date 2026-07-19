@@ -195,10 +195,10 @@ export const useShift = () => {
         notes,
       });
       setOpenShift(res.data.data ?? null);
-      successToast("Shift opened");
+      successToast("Shift opened / Zamu yafunguwe");
       return true;
     } catch (e: any) {
-      errorToast(e?.response?.data?.message || "Failed to open shift");
+      errorToast(e?.response?.data?.message || "Failed to open shift / Byanze");
       return false;
     } finally {
       setLoading(false);
@@ -210,10 +210,10 @@ export const useShift = () => {
     try {
       const res = await api.patch(`api/chargers/shifts/${shiftId}/add-cashpower/`, { amount });
       setOpenShift(res.data.data ?? null);
-      successToast("Cashpower added");
+      successToast("Cashpower added / Cashpower yongewe");
       return true;
     } catch (e: any) {
-      errorToast(e?.response?.data?.message || "Failed to add cashpower");
+      errorToast(e?.response?.data?.message || "Failed to add cashpower / Byanze");
       return false;
     } finally {
       setLoading(false);
@@ -230,10 +230,10 @@ export const useShift = () => {
     try {
       await api.patch(`api/chargers/shifts/${shiftId}/close/`, { money_on_momo, end_kwatts_in_cashpower, notes });
       setOpenShift(null);
-      successToast("Shift closed");
+      successToast("Shift closed / Zamu yafunzwe");
       return true;
     } catch (e: any) {
-      errorToast(e?.response?.data?.message || "Failed to close shift");
+      errorToast(e?.response?.data?.message || "Failed to close shift / Byanze");
       return false;
     } finally {
       setLoading(false);
@@ -274,10 +274,10 @@ export const useSession = () => {
     try {
       const res = await api.post("api/sessions/start/", { charger_id, port, plate_number, starting_car_percentage });
       setActiveSessions(prev => [...prev, res.data.data]);
-      successToast("Session started");
+      successToast("Charging started / Gusharija byatangiye");
       return true;
     } catch (e: any) {
-      errorToast(e?.response?.data?.message || "Failed to start session");
+      errorToast(e?.response?.data?.message || "Failed to start / Byanze");
       return false;
     }
   };
@@ -294,7 +294,7 @@ export const useSession = () => {
       setActiveSessions(prev => prev.filter(s => s.id !== session_id));
       return (res.data.data as Session) ?? null;
     } catch (e: any) {
-      errorToast(e?.response?.data?.message || "Failed to end session");
+      errorToast(e?.response?.data?.message || "Failed to end / Byanze");
       return null;
     }
   };
@@ -319,7 +319,7 @@ export const useRegisterCar = () => {
       successToast(res.data.message);
       return res.data.data as Car;
     } catch (e: any) {
-      errorToast(e?.response?.data?.message || "Failed to register car");
+      errorToast(e?.response?.data?.message || "Failed to register car / Byanze");
       return null;
     } finally {
       setLoading(false);
