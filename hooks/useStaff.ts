@@ -50,6 +50,7 @@ export interface Session {
   starting_car_percentage: number;
   ending_car_percentage: number | null;
   watt_consumed: string | null;
+  is_estimated: boolean; // true when kWh was auto-estimated after a power outage
   total_price: string | null;
   duration: string | null;
   started_at: string;
@@ -284,13 +285,19 @@ export const useSession = () => {
 
   // Returns the completed session (with computed total_price/duration) so the
   // UI can present the price — no toast here.
+  // Two modes: normal (pass watt_consumed) or power-outage (power_outage=true,
+  // watt_consumed omitted — the server estimates kWh from the car's history).
   const endSession = async (
     session_id: number,
-    watt_consumed: string,
-    ending_car_percentage: number
+    ending_car_percentage: number,
+    watt_consumed?: string,
+    power_outage?: boolean
   ): Promise<Session | null> => {
     try {
-      const res = await api.post("api/sessions/end/", { session_id, watt_consumed, ending_car_percentage });
+      const payload: Record<string, unknown> = { session_id, ending_car_percentage };
+      if (power_outage) payload.power_outage = true;
+      else payload.watt_consumed = watt_consumed;
+      const res = await api.post("api/sessions/end/", payload);
       setActiveSessions(prev => prev.filter(s => s.id !== session_id));
       return (res.data.data as Session) ?? null;
     } catch (e: any) {

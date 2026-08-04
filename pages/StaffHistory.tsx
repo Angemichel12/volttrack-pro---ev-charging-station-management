@@ -71,7 +71,16 @@ export const StaffHistory: React.FC = () => {
                   <td className="py-3 px-2 text-gray-500">
                     {s.starting_car_percentage}% → {s.ending_car_percentage ?? "—"}%
                   </td>
-                  <td className="py-3 px-2">{s.watt_consumed ? kw(s.watt_consumed) : "—"}</td>
+                  <td className="py-3 px-2">
+                    <span className="inline-flex items-center gap-1.5">
+                      {s.watt_consumed ? kw(s.watt_consumed) : "—"}
+                      {s.is_estimated && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-50 text-amber-600" title="Estimated after power outage / Bigereranyijwe">
+                          Est.
+                        </span>
+                      )}
+                    </span>
+                  </td>
                   <td className="py-3 px-2 font-semibold text-green-700">
                     {s.total_price ? rwf(s.total_price) : "—"}
                   </td>

@@ -152,7 +152,16 @@ export const ReportPanel: React.FC<{
                     <td className="py-3 px-2 text-gray-500">
                       {r.starting_car_percentage}% → {r.ending_car_percentage ?? "—"}%
                     </td>
-                    <td className="py-3 px-2">{r.watt_consumed ? kw(r.watt_consumed) : "—"}</td>
+                    <td className="py-3 px-2">
+                      <span className="inline-flex items-center gap-1.5">
+                        {r.watt_consumed ? kw(r.watt_consumed) : "—"}
+                        {r.is_estimated && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-50 text-amber-600" title="Estimated after power outage">
+                            Est.
+                          </span>
+                        )}
+                      </span>
+                    </td>
                     <td className="py-3 px-2 text-gray-500">{r.duration ?? "—"}</td>
                     <td className="py-3 px-2 font-semibold text-green-700">
                       {r.total_price ? rwf(r.total_price) : "—"}

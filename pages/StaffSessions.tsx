@@ -16,6 +16,9 @@ export const StaffSessionsPage: React.FC = () => {
 
   const [wattInput, setWattInput] = useState<{ [key: number]: string }>({});
   const [endPctInput, setEndPctInput] = useState<{ [key: number]: string }>({});
+  // Per-session "power went off / couldn't read meter" toggle — when on, the kWh
+  // is estimated server-side from the car's history instead of being entered.
+  const [outageOn, setOutageOn] = useState<{ [key: number]: boolean }>({});
   const [endingId, setEndingId] = useState<number | null>(null);
   const [endedSession, setEndedSession] = useState<Session | null>(null);
 
@@ -106,15 +109,23 @@ export const StaffSessionsPage: React.FC = () => {
   };
 
   const handleEnd = async (sessionId: number) => {
+    const outage = !!outageOn[sessionId];
     const watt = wattInput[sessionId];
     const endPct = endPctInput[sessionId];
-    if (!watt || !endPct) return;
+    // On a power outage only the ending % is required; kWh comes from history.
+    if (!endPct || (!outage && !watt)) return;
     setEndingId(sessionId);
-    const ended = await endSession(sessionId, watt, parseFloat(endPct));
+    const ended = await endSession(
+      sessionId,
+      parseFloat(endPct),
+      outage ? undefined : watt,
+      outage
+    );
     setEndingId(null);
     if (!ended) return;
     setWattInput(prev => { const n = { ...prev }; delete n[sessionId]; return n; });
     setEndPctInput(prev => { const n = { ...prev }; delete n[sessionId]; return n; });
+    setOutageOn(prev => { const n = { ...prev }; delete n[sessionId]; return n; });
     setEndedSession(ended); // show the calculated price in a popup
     refreshChargers();
   };
@@ -319,9 +330,11 @@ export const StaffSessionsPage: React.FC = () => {
                     <Input
                       label="kW used / kW zakoreshejwe"
                       type="number"
-                      placeholder="kW"
-                      value={wattInput[session.id] || ""}
+                      placeholder={outageOn[session.id] ? "Auto / Bibarwa" : "kW"}
+                      value={outageOn[session.id] ? "" : (wattInput[session.id] || "")}
                       onChange={e => setWattInput({ ...wattInput, [session.id]: e.target.value })}
+                      disabled={!!outageOn[session.id]}
+                      hint={outageOn[session.id] ? "Estimated / Bigereranyijwe" : undefined}
                     />
                     <Input
                       label="Battery now (%) / Batiri ubu"
@@ -333,10 +346,24 @@ export const StaffSessionsPage: React.FC = () => {
                       onChange={e => setEndPctInput({ ...endPctInput, [session.id]: e.target.value })}
                     />
                   </div>
+                  {/* Power-outage toggle — hide the kWh input, estimate from history */}
+                  <label className="flex items-start gap-2 cursor-pointer select-none text-sm text-gray-600">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 w-4 h-4 accent-green-600 shrink-0"
+                      checked={!!outageOn[session.id]}
+                      onChange={e => setOutageOn({ ...outageOn, [session.id]: e.target.checked })}
+                    />
+                    <span>Power went off — couldn't read meter / Umuriro wazimye — sinabashije gusoma</span>
+                  </label>
                   <Button
                     className="w-full"
                     onClick={() => handleEnd(session.id)}
-                    disabled={!wattInput[session.id] || !endPctInput[session.id] || endingId === session.id}
+                    disabled={
+                      !endPctInput[session.id] ||
+                      (!outageOn[session.id] && !wattInput[session.id]) ||
+                      endingId === session.id
+                    }
                   >
                     {endingId === session.id ? "Tegereza..." : "Finish / Rangiza"}
                   </Button>
@@ -363,7 +390,12 @@ export const StaffSessionsPage: React.FC = () => {
               {[
                 ["Car / Imodoka", endedSession.car_plate],
                 ["Charger", endedSession.charger_name],
-                ["Energy / Umuriro", endedSession.watt_consumed ? kw(endedSession.watt_consumed) : "—"],
+                ["Energy / Umuriro", (
+                  <span className="inline-flex items-center gap-1.5">
+                    {endedSession.watt_consumed ? kw(endedSession.watt_consumed) : "—"}
+                    {endedSession.is_estimated && <Badge tone="amber">Estimated / Bigereranyijwe</Badge>}
+                  </span>
+                )],
                 ["Battery / Batiri", `${endedSession.starting_car_percentage}% → ${endedSession.ending_car_percentage ?? "—"}%`],
                 ["Time / Igihe", endedSession.duration ?? "—"],
               ].map(([label, val]) => (

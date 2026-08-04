@@ -16,6 +16,7 @@ export interface SessionReportRow {
   starting_car_percentage: number;
   ending_car_percentage: number | null;
   watt_consumed: string | null;
+  is_estimated: boolean;
   duration: string | null;
   total_price: string | null;
   started_at: string;
