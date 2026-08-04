@@ -3,14 +3,15 @@ import { Card, StatCard, PageHeader, StatSkeleton, TableSkeleton } from "../comp
 import { IconBolt, IconMoney, IconCharger, IconStation } from "../components/Icons";
 import { rwf, kw } from "../utils/format";
 import { useAdminReports, useAdminStations, useAdminEmployees } from "../hooks/useAdmin";
-import { ReportPanel } from "./DetailedReports";
+import { ReportPanel, CarReportPanel } from "./DetailedReports";
 
-type Tab = "overview" | "sessions" | "shifts";
+type Tab = "overview" | "sessions" | "shifts" | "cars";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview / Incamake" },
   { key: "sessions", label: "Sessions / Gusharija" },
-  { key: "shifts", label: "Shifts / Zamu" },
+  { key: "shifts", label: "Shifts / shifuti" },
+  { key: "cars", label: "Cars / Amadeni" },
 ];
 
 export const AdminReports: React.FC = () => {
@@ -57,9 +58,12 @@ export const AdminReports: React.FC = () => {
       </div>
 
       {/* ── Sessions / Shifts — filterable data + downloads ───────── */}
-      {tab !== "overview" && (
+      {(tab === "sessions" || tab === "shifts") && (
         <ReportPanel type={tab} isAdmin employees={employees} />
       )}
+
+      {/* ── Cars — per-car charging & pay-later debt ledger ───────── */}
+      {tab === "cars" && <CarReportPanel />}
 
       {/* ── Overview ─────────────────────────────────────────────── */}
       {tab === "overview" && (loading ? (

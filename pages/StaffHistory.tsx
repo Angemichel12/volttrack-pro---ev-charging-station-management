@@ -15,7 +15,7 @@ export const StaffHistory: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="History / Amateka" subtitle="Sessions + shifts / Gusharija + zamu" />
+      <PageHeader title="History / Amateka" subtitle="Sessions + shifts / Gusharija + shifuti" />
 
       {/* ── Summary ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -37,7 +37,7 @@ export const StaffHistory: React.FC = () => {
                 : "border-transparent text-gray-400 hover:text-gray-600"
             }`}
           >
-            {t === "sessions" ? "Sessions / Gusharija" : "Shifts / Zamu"}
+            {t === "sessions" ? "Sessions / Gusharija" : "Shifts / shifuti"}
           </button>
         ))}
       </div>
@@ -119,7 +119,7 @@ export const StaffHistory: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {shifts.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-8 text-gray-400">No shifts / Nta zamu</td></tr>
+                <tr><td colSpan={8} className="text-center py-8 text-gray-400">No shifts / Nta shifuti</td></tr>
               )}
               {shifts.map(sh => (
                 <tr key={sh.id} className="text-sm">

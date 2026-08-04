@@ -10,7 +10,7 @@ type Tab = "chargers" | "sessions" | "shifts";
 const TABS: { key: Tab; label: string }[] = [
   { key: "chargers", label: "Chargers" },
   { key: "sessions", label: "Sessions / Gusharija" },
-  { key: "shifts", label: "Shifts / Zamu" },
+  { key: "shifts", label: "Shifts / shifuti" },
 ];
 
 export const StaffReports: React.FC = () => {

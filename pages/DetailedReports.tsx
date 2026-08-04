@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Card, Button, Input, Select, TableSkeleton } from "../components/Shared";
+import { Card, Button, Input, Select, Badge, TableSkeleton } from "../components/Shared";
 import { IconExport } from "../components/Icons";
 import { rwf, kw } from "../utils/format";
 import { useStations } from "../hooks/useStaff";
 import { type Employee } from "../hooks/useAdmin";
-import { useSessionReport, useShiftReport, type ReportFilters } from "../hooks/useReports";
+import { useSessionReport, useShiftReport, useCarReport, type ReportFilters } from "../hooks/useReports";
 
 // Embeddable detailed-report panel: data loads automatically as filters change,
 // and the same filtered slice can be downloaded as Excel or PDF.
@@ -89,7 +89,7 @@ export const ReportPanel: React.FC<{
                 onChange={e => setChargerId(e.target.value)}
               />
               <Input
-                label="Shift ID / Zamu ID (si ngombwa)"
+                label="Shift ID / shifuti ID (si ngombwa)"
                 type="number"
                 placeholder="urugero: 12"
                 value={shiftId}
@@ -234,6 +234,129 @@ export const ReportPanel: React.FC<{
         </Card>
       )}
       </div>
+      )}
+    </div>
+  );
+};
+
+// Per-car charging & payment summary — the pay-later / debt ledger across cars.
+// Admin-only report; ordered server-side by outstanding balance (highest first).
+export const CarReportPanel: React.FC = () => {
+  const { stations } = useStations();
+  const { rows, loading, fetchReport, downloadExcel, downloadPdf } = useCarReport();
+
+  const [stationId, setStationId] = useState("");
+  const [postpaid, setPostpaid] = useState<"" | "true" | "false">("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const buildFilters = (): ReportFilters => ({
+    station: stationId ? parseInt(stationId) : undefined,
+    postpaid: postpaid === "" ? undefined : postpaid === "true",
+    date_from: dateFrom || undefined,
+    date_to: dateTo || undefined,
+  });
+
+  useEffect(() => {
+    const timeout = setTimeout(() => fetchReport(buildFilters()), 350);
+    return () => clearTimeout(timeout);
+  }, [stationId, postpaid, dateFrom, dateTo]);
+
+  const totalOutstanding = rows.reduce((sum, r) => sum + parseFloat(r.outstanding || "0"), 0);
+
+  return (
+    <div className="space-y-4">
+      <Card
+        title="Filters / Shungura"
+        actions={
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => downloadExcel(buildFilters())} className="!px-3">
+              <IconExport className="w-4 h-4" /> Excel
+            </Button>
+            <Button variant="secondary" onClick={() => downloadPdf(buildFilters())} className="!px-3">
+              <IconExport className="w-4 h-4" /> PDF
+            </Button>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Select label="Station / Sitasiyo" value={stationId} onChange={e => setStationId(e.target.value)}>
+            <option value="">All / Zose</option>
+            {stations.map(st => (
+              <option key={st.id} value={st.id}>{st.name}</option>
+            ))}
+          </Select>
+          <Select label="Billing / Ubwishyu" value={postpaid} onChange={e => setPostpaid(e.target.value as "" | "true" | "false")}>
+            <option value="">All / Byose</option>
+            <option value="true">Pay-later / Nyuma</option>
+            <option value="false">Prepaid / Ako kanya</option>
+          </Select>
+          <Input label="From / Kuva" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <Input label="To / Kugeza" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        </div>
+      </Card>
+
+      {loading && rows.length === 0 ? (
+        <Card><TableSkeleton rows={6} cols={7} /></Card>
+      ) : (
+        <div className={loading ? "opacity-60 transition-opacity" : "transition-opacity"}>
+          <Card>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[820px]">
+                <thead className="text-left border-b border-gray-100">
+                  <tr className="text-xs text-gray-400 uppercase tracking-wider">
+                    <th className="pb-3 px-2">Plate / Plaque</th>
+                    <th className="pb-3 px-2">Owner / Nyir'imodoka</th>
+                    <th className="pb-3 px-2">Billing / Ubwishyu</th>
+                    <th className="pb-3 px-2">Charges / Inshuro</th>
+                    <th className="pb-3 px-2">Charged / Yose</th>
+                    <th className="pb-3 px-2">Paid / Yishyuwe</th>
+                    <th className="pb-3 px-2">Outstanding / Umwenda</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {rows.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="text-center py-8 text-gray-400">
+                        {loading ? "Tegereza..." : "No data / Nta makuru"}
+                      </td>
+                    </tr>
+                  )}
+                  {rows.map((r, i) => {
+                    const owed = parseFloat(r.outstanding || "0");
+                    return (
+                      <tr key={i} className="text-sm">
+                        <td className="py-3 px-2 font-medium">{r.plate_number}</td>
+                        <td className="py-3 px-2 text-gray-500">{r.owner_name || "—"}</td>
+                        <td className="py-3 px-2">
+                          {r.is_postpaid
+                            ? <Badge tone="amber">Pay-later / Nyuma</Badge>
+                            : <Badge tone="green">Prepaid / Ako kanya</Badge>}
+                        </td>
+                        <td className="py-3 px-2">{r.times_charged}</td>
+                        <td className="py-3 px-2">{rwf(r.total_amount)}</td>
+                        <td className="py-3 px-2 text-gray-500">{rwf(r.amount_paid)}</td>
+                        <td className={`py-3 px-2 font-semibold ${owed > 0 ? "text-red-600" : "text-gray-400"}`}>
+                          {rwf(r.outstanding)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                {rows.length > 0 && (
+                  <tfoot className="border-t-2 border-gray-200">
+                    <tr className="text-sm font-bold">
+                      <td className="pt-3 px-2" colSpan={6}>Total outstanding / Umwenda wose</td>
+                      <td className={`pt-3 px-2 ${totalOutstanding > 0 ? "text-red-600" : "text-gray-400"}`}>
+                        {rwf(totalOutstanding)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );

@@ -139,11 +139,11 @@ export const StaffSessionsPage: React.FC = () => {
         <PageHeader title="Sessions / Gusharija" subtitle="Charge cars / Sharija imodoka" />
         <EmptyState
           icon={<IconShift className="w-6 h-6" />}
-          title="No open shift / Nta zamu ifunguye"
-          hint="Open a shift first. / Banza ufungure zamu."
+          title="No open shift / Nta shifuti ifunguye"
+          hint="Open a shift first. / Banza ufungure shifuti."
           action={
             <Button onClick={() => navigate("/staff/shift")}>
-              Open Shift / Fungura Zamu
+              Open Shift / Fungura shifuti
             </Button>
           }
         />
@@ -157,7 +157,7 @@ export const StaffSessionsPage: React.FC = () => {
       <PageHeader
         title="Sessions / Gusharija"
         subtitle={`${data!.station.name} · ${data!.charger_count} charger${data!.charger_count === 1 ? "" : "s"}`}
-        actions={<Badge tone="green" pulse>On duty / Uri ku zamu</Badge>}
+        actions={<Badge tone="green" pulse>On duty / Uri ku shifuti</Badge>}
       />
 
       {/* ── Start Session banner ──────────────────────────────────── */}
@@ -354,7 +354,7 @@ export const StaffSessionsPage: React.FC = () => {
                       checked={!!outageOn[session.id]}
                       onChange={e => setOutageOn({ ...outageOn, [session.id]: e.target.checked })}
                     />
-                    <span>Power went off — couldn't read meter / Umuriro wazimye — sinabashije gusoma</span>
+                    <span>Umuriro uragiye</span>
                   </label>
                   <Button
                     className="w-full"
@@ -379,11 +379,24 @@ export const StaffSessionsPage: React.FC = () => {
         {endedSession && (
           <div className="space-y-5">
             <div className="text-center py-2">
-              <div className="mx-auto w-12 h-12 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center mb-3">
+              <div className={`mx-auto w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${
+                endedSession.is_paid ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-600"
+              }`}>
                 <IconMoney className="w-6 h-6" />
               </div>
-              <p className="text-sm text-gray-500">To collect / Amafaranga yo kwakira</p>
-              <p className="text-4xl font-bold text-green-700 mt-1">{rwf(endedSession.total_price)}</p>
+              <p className="text-sm text-gray-500">
+                {endedSession.is_paid
+                  ? "Irishyura"
+                  : "Izishyura Nyuma"}
+              </p>
+              <p className={`text-4xl font-bold mt-1 ${endedSession.is_paid ? "text-green-700" : "text-amber-600"}`}>
+                {rwf(endedSession.total_price)}
+              </p>
+              {!endedSession.is_paid && (
+                <div className="mt-2 flex justify-center">
+                  <Badge tone="amber">Izishyura Nyuma</Badge>
+                </div>
+              )}
             </div>
 
             <div className="bg-gray-50 rounded-xl divide-y divide-gray-100 text-sm">

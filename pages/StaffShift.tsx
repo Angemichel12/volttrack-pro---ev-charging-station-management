@@ -58,9 +58,9 @@ export const StaffShiftPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="My Shift / Zamu Yanjye"
-        subtitle={openShift ? `${openShift.station_name}` : "Open a shift / Fungura zamu"}
-        actions={openShift ? <Badge tone="green" pulse>On duty / Uri ku zamu</Badge> : <Badge tone="gray">Off duty / Nta zamu</Badge>}
+        title="My Shift / shifuti Yanjye"
+        subtitle={openShift ? `${openShift.station_name}` : "Open a shift / Fungura shifuti"}
+        actions={openShift ? <Badge tone="green" pulse>On duty / Uri ku shifuti</Badge> : <Badge tone="gray">Off duty / Nta shifuti</Badge>}
       />
 
       {/* ── Station summary (only while a shift is open) ──────────── */}
@@ -75,7 +75,7 @@ export const StaffShiftPage: React.FC = () => {
 
       {!openShift ? (
         /* ── Open a new shift ────────────────────────────────────── */
-        <Card title="Open Shift / Fungura Zamu">
+        <Card title="Open Shift / Fungura shifuti">
           <div className="space-y-4">
             <p className="text-sm text-gray-500 -mt-1">
               Pick station, enter Cashpower. / Hitamo sitasiyo, andika Cashpower.
@@ -112,7 +112,7 @@ export const StaffShiftPage: React.FC = () => {
                   onClick={handleOpenShift}
                   disabled={shiftLoading || !stationId || !cashpowerStartInput}
                 >
-                  {shiftLoading ? "Tegereza..." : "Open Shift / Fungura Zamu"}
+                  {shiftLoading ? "Tegereza..." : "Open Shift / Fungura shifuti"}
                   <IconArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -121,7 +121,7 @@ export const StaffShiftPage: React.FC = () => {
         </Card>
       ) : (
         /* ── Manage / close the open shift ───────────────────────── */
-        <Card title="Current Shift / Zamu ya None">
+        <Card title="Current Shift / shifuti ya None">
           <div className="space-y-5">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
               {[
@@ -174,7 +174,7 @@ export const StaffShiftPage: React.FC = () => {
 
             {/* Close shift */}
             <div className="pt-4 border-t border-gray-100">
-              <p className="text-sm font-semibold text-gray-700 mb-1">Close Shift / Funga Zamu</p>
+              <p className="text-sm font-semibold text-gray-700 mb-1">Close Shift / Funga shifuti</p>
               <p className="text-xs text-gray-400 mb-3">
                 Enter MoMo money and end Cashpower. / Andika amafaranga ya MoMo na Cashpower usoza.
               </p>
@@ -206,7 +206,7 @@ export const StaffShiftPage: React.FC = () => {
                 disabled={shiftLoading || !moneyOnMomoInput || !endCashpowerInput}
                 className="mt-3 w-full sm:w-auto"
               >
-                {shiftLoading ? "Tegereza..." : "Close Shift / Funga Zamu"}
+                {shiftLoading ? "Tegereza..." : "Close Shift / Funga shifuti"}
               </Button>
             </div>
           </div>

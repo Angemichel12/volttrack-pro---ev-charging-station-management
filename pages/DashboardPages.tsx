@@ -115,7 +115,7 @@ export const AdminDashboard: React.FC = () => {
             />
             <StatCard label="kW used / kW zakoreshejwe" value={kw(summary?.total_kwatt_used)} icon={<IconBolt className="w-5 h-5" />} />
             <StatCard label="Sessions / Gusharija" value={num(summary?.total_sessions).toLocaleString()} icon={<IconCharger className="w-5 h-5" />} />
-            <StatCard label="Shifts / Zamu" value={num(summary?.total_shifts).toLocaleString()} icon={<IconShift className="w-5 h-5" />} />
+            <StatCard label="Shifts / shifuti" value={num(summary?.total_shifts).toLocaleString()} icon={<IconShift className="w-5 h-5" />} />
           </div>
 
           {!hasData ? (

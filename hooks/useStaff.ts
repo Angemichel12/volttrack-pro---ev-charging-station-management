@@ -33,6 +33,7 @@ export interface Car {
   phone_number: string | null;
   optional_info: string | null;
   unique_price?: string | null; // admin-only — absent from the staff response entirely
+  is_postpaid?: boolean;        // admin-only — pay-later car (settles debt later, not at charge time)
   created_at: string;
 }
 
@@ -52,6 +53,8 @@ export interface Session {
   watt_consumed: string | null;
   is_estimated: boolean; // true when kWh was auto-estimated after a power outage
   total_price: string | null;
+  is_paid: boolean;          // false for an unsettled postpaid (pay-later) charge
+  amount_paid: string | null; // 0 until a postpaid car's debt is settled
   duration: string | null;
   started_at: string;
   ended_at: string | null;
@@ -196,7 +199,7 @@ export const useShift = () => {
         notes,
       });
       setOpenShift(res.data.data ?? null);
-      successToast("Shift opened / Zamu yafunguwe");
+      successToast("Shift opened / shifuti yafunguwe");
       return true;
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to open shift / Byanze");
@@ -231,7 +234,7 @@ export const useShift = () => {
     try {
       await api.patch(`api/chargers/shifts/${shiftId}/close/`, { money_on_momo, end_kwatts_in_cashpower, notes });
       setOpenShift(null);
-      successToast("Shift closed / Zamu yafunzwe");
+      successToast("Shift closed / shifuti yafunzwe");
       return true;
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to close shift / Byanze");

@@ -12,6 +12,33 @@ export interface CarPayload {
   phone_number?: string;
   optional_info?: string;
   unique_price?: string; // admin only — ignored by the API for staff requests
+  is_postpaid?: boolean; // admin only — flag a car as pay-later
+}
+
+// ─── Postpaid balance / payments ──────────────────────────────────────────────
+
+export interface CarBalance {
+  times_charged: number;
+  total_charged: string;
+  total_paid: string;
+  outstanding: string;
+  times_paid: number;
+  is_postpaid: boolean;
+}
+
+export interface CarPayment {
+  id: number;
+  car: number;
+  amount: string;
+  recorded_by: number;
+  recorded_by_name?: string;
+  note: string | null;
+  paid_at: string;
+}
+
+export interface CarBalanceResponse {
+  balance: CarBalance;
+  payments: CarPayment[];
 }
 
 // ─── useCars — shared /api/cars/ CRUD (admin + staff, delete is admin-only) ───
@@ -69,5 +96,33 @@ export const useCars = () => {
     }
   };
 
-  return { cars, loading, fetchCars, createCar, updateCar, deleteCar };
+  // Admin-only: outstanding balance + payment history for a car.
+  const fetchBalance = async (id: number): Promise<CarBalanceResponse | null> => {
+    try {
+      const res = await api.get(`api/cars/${id}/balance/`);
+      return res.data.data as CarBalanceResponse;
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to load balance / Byanze");
+      return null;
+    }
+  };
+
+  // Admin-only: record a settlement against a car's oldest unpaid sessions (FIFO).
+  // Returns the refreshed balance so the caller can re-render without a second fetch.
+  const payCar = async (
+    id: number,
+    amount: string,
+    note?: string
+  ): Promise<CarBalanceResponse | null> => {
+    try {
+      await api.post(`api/cars/${id}/pay/`, { amount, note: note || undefined });
+      successToast("Payment recorded / Ubwishyu bwanditswe");
+      return await fetchBalance(id);
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to record payment / Byanze");
+      return null;
+    }
+  };
+
+  return { cars, loading, fetchCars, createCar, updateCar, deleteCar, fetchBalance, payCar };
 };

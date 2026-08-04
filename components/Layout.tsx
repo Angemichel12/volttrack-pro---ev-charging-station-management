@@ -24,7 +24,7 @@ const NAV_ITEMS: Record<string, NavItem[]> = {
     { label: 'Reports / Raporo',     path: '/admin/reports',   icon: IconChart },
   ],
   staff: [
-    { label: 'Shift / Zamu',         path: '/staff/shift',     icon: IconShift },
+    { label: 'Shift / shifuti',         path: '/staff/shift',     icon: IconShift },
     { label: 'Sessions / Gusharija', path: '/staff/sessions',  icon: IconBolt },
     { label: 'Cars / Imodoka',       path: '/staff/cars',      icon: IconCar },
     { label: 'History / Amateka',    path: '/staff/history',   icon: IconHistory },
