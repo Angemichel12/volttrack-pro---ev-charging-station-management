@@ -55,6 +55,7 @@ export interface ReportFilters {
   charger?: number; // sessions report only
   shift?: number;   // sessions report only
   postpaid?: boolean; // cars report only — true = pay-later only, false = prepaid only
+  owner?: string;   // car owner name (exact) — applies to sessions, shifts and cars reports
   date_from?: string; // YYYY-MM-DD
   date_to?: string;   // YYYY-MM-DD
 }
@@ -66,6 +67,7 @@ const buildParams = (filters: ReportFilters): Record<string, string> => {
   if (filters.charger) params.charger = String(filters.charger);
   if (filters.shift) params.shift = String(filters.shift);
   if (filters.postpaid !== undefined) params.postpaid = String(filters.postpaid);
+  if (filters.owner) params.owner = filters.owner;
   if (filters.date_from) params.date_from = filters.date_from;
   if (filters.date_to) params.date_to = filters.date_to;
   return params;

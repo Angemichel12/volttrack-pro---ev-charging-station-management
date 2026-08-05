@@ -41,6 +41,32 @@ export interface CarBalanceResponse {
   payments: CarPayment[];
 }
 
+// ─── Owner type-ahead (for report filtering) ──────────────────────────────────
+
+export interface CarOwner {
+  owner_name: string;
+  car_count: number;
+}
+
+// Distinct car-owner names for report filters. `searchOwners` hits
+// GET /api/cars/owners/?search=... (case-insensitive substring; omit to list all).
+export const useCarOwners = () => {
+  const [owners, setOwners] = useState<CarOwner[]>([]);
+
+  const searchOwners = useCallback(async (search: string) => {
+    try {
+      const res = await api.get("api/cars/owners/", {
+        params: search ? { search } : {},
+      });
+      setOwners(safeArray<CarOwner>(res.data?.data));
+    } catch {
+      setOwners([]);
+    }
+  }, []);
+
+  return { owners, searchOwners };
+};
+
 // ─── useCars — shared /api/cars/ CRUD (admin + staff, delete is admin-only) ───
 
 export const useCars = () => {

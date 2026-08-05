@@ -1,10 +1,41 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import { Card, Button, Input, Select, Badge, TableSkeleton } from "../components/Shared";
 import { IconExport } from "../components/Icons";
 import { rwf, kw } from "../utils/format";
 import { useStations } from "../hooks/useStaff";
 import { type Employee } from "../hooks/useAdmin";
+import { useCarOwners } from "../hooks/useCars";
 import { useSessionReport, useShiftReport, useCarReport, type ReportFilters } from "../hooks/useReports";
+
+// Car-owner filter: a text input backed by a <datalist> type-ahead. Names are
+// fetched from /api/cars/owners/ as the user types; picking one passes the exact
+// owner name to the report `owner` filter (sessions/shifts/cars reports).
+const OwnerFilter: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => {
+  const { owners, searchOwners } = useCarOwners();
+  const listId = useId();
+
+  useEffect(() => {
+    const t = setTimeout(() => searchOwners(value), 300);
+    return () => clearTimeout(t);
+  }, [value, searchOwners]);
+
+  return (
+    <>
+      <Input
+        label="Owner / Nyir'imodoka"
+        placeholder="Andika izina..."
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        list={listId}
+      />
+      <datalist id={listId}>
+        {owners.map(o => (
+          <option key={o.owner_name} value={o.owner_name}>{`${o.car_count} car(s)`}</option>
+        ))}
+      </datalist>
+    </>
+  );
+};
 
 // Embeddable detailed-report panel: data loads automatically as filters change,
 // and the same filtered slice can be downloaded as Excel or PDF.
@@ -21,6 +52,7 @@ export const ReportPanel: React.FC<{
   const [stationId, setStationId] = useState("");
   const [chargerId, setChargerId] = useState("");
   const [shiftId, setShiftId] = useState("");
+  const [owner, setOwner] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -29,6 +61,7 @@ export const ReportPanel: React.FC<{
     station: stationId ? parseInt(stationId) : undefined,
     charger: type === "sessions" && chargerId ? parseInt(chargerId) : undefined,
     shift: type === "sessions" && shiftId ? parseInt(shiftId) : undefined,
+    owner: owner || undefined,
     date_from: dateFrom || undefined,
     date_to: dateTo || undefined,
   });
@@ -42,7 +75,7 @@ export const ReportPanel: React.FC<{
       active.fetchReport(buildFilters());
     }, 350);
     return () => clearTimeout(timeout);
-  }, [type, staffId, stationId, chargerId, shiftId, dateFrom, dateTo]);
+  }, [type, staffId, stationId, chargerId, shiftId, owner, dateFrom, dateTo]);
 
   const handleExcel = () => active.downloadExcel(buildFilters());
   const handlePdf = () => active.downloadPdf(buildFilters());
@@ -97,6 +130,7 @@ export const ReportPanel: React.FC<{
               />
             </>
           )}
+          <OwnerFilter value={owner} onChange={setOwner} />
           <Input
             label="From / Kuva"
             type="date"
@@ -247,12 +281,14 @@ export const CarReportPanel: React.FC = () => {
 
   const [stationId, setStationId] = useState("");
   const [postpaid, setPostpaid] = useState<"" | "true" | "false">("");
+  const [owner, setOwner] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const buildFilters = (): ReportFilters => ({
     station: stationId ? parseInt(stationId) : undefined,
     postpaid: postpaid === "" ? undefined : postpaid === "true",
+    owner: owner || undefined,
     date_from: dateFrom || undefined,
     date_to: dateTo || undefined,
   });
@@ -260,7 +296,7 @@ export const CarReportPanel: React.FC = () => {
   useEffect(() => {
     const timeout = setTimeout(() => fetchReport(buildFilters()), 350);
     return () => clearTimeout(timeout);
-  }, [stationId, postpaid, dateFrom, dateTo]);
+  }, [stationId, postpaid, owner, dateFrom, dateTo]);
 
   const totalOutstanding = rows.reduce((sum, r) => sum + parseFloat(r.outstanding || "0"), 0);
 
@@ -291,6 +327,7 @@ export const CarReportPanel: React.FC = () => {
             <option value="true">Pay-later / Nyuma</option>
             <option value="false">Prepaid / Ako kanya</option>
           </Select>
+          <OwnerFilter value={owner} onChange={setOwner} />
           <Input label="From / Kuva" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
           <Input label="To / Kugeza" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
         </div>

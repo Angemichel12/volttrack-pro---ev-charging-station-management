@@ -123,6 +123,7 @@ Full CRUD, but the response shape and what you're allowed to set depends on role
 | Method | Path | Role | Notes |
 |---|---|---|---|
 | GET | `` / `<pk>/` | admin or staff | Admin response includes `unique_price` and `is_postpaid`; staff response omits both entirely. |
+| GET | `owners/?search=...` | admin or staff | **Owner type-ahead** for report filtering. Returns distinct, non-blank owner names matching `search` (case-insensitive substring), each with `car_count`: `[{owner_name, car_count}, ...]`, ordered by name. Omitting `search` lists all owners. Pick a name here, then pass it as the `owner` query param to any report (see Reports). |
 | POST | `` | admin or staff | Create a car: `plate_number, owner_name?, phone_number?, optional_info?` (+ `unique_price?`, `is_postpaid?` for admin only — those fields don't exist in the staff request/response schema, so staff can't set or see them even by sending them). |
 | PATCH | `<pk>/` | admin or staff | Same field restriction as create. Admins flip a car to pay-later by `PATCH`-ing `{ "is_postpaid": true }`. |
 | DELETE | `<pk>/` | **admin only** | Staff gets 403. |
@@ -167,9 +168,9 @@ Send `power_outage: true` and **omit** `watt_consumed`; the server estimates it 
 ```
 
 How the estimate is computed (server-side, not the client's job):
-- For each of the car's **past completed real** sessions (`is_estimated=false`, both percentages recorded, end% > start%), a per-percent rate = `watt_consumed / (ending% − starting%)` (kWh per 1% of battery).
-- The rates are **averaged** across all such sessions, then multiplied by this session's `(ending_car_percentage − starting_car_percentage)` and rounded to 2 decimals.
-- Example: a past charge used 50 kWh over 20%→100% → rate 0.625 kWh/%. This outage the car went 20%→50% → `0.625 × 30 = 18.75` kWh. `total_price` then applies pricing rule #5 as usual.
+- Take the car's **most recent completed real** session (`is_estimated=false`, both percentages recorded, end% > start%), ordered by `ended_at` — the last time this car actually charged.
+- Derive its per-percent rate = `watt_consumed / (ending% − starting%)` (kWh per 1% of battery), then multiply by this session's `(ending_car_percentage − starting_car_percentage)` and round to 2 decimals.
+- Example: the car's last charge used 50 kWh over 20%→100% → rate 0.625 kWh/%. This outage the car went 20%→50% → `0.625 × 30 = 18.75` kWh. `total_price` then applies pricing rule #5 as usual.
 
 Integration notes for the frontend:
 - Offer a **"Power went off / couldn't read meter"** toggle on the end-session form. When on, hide/disable the kWh input and send `power_outage: true` without `watt_consumed`; still collect `ending_car_percentage`.
@@ -202,6 +203,7 @@ Two report types, each with a JSON endpoint plus Excel/PDF download twins that a
 - `station` — station id.
 - `charger` — session report only.
 - `shift` — session report only, filter to one shift's sessions.
+- `owner` — car owner name (exact). Look names up via `GET /api/cars/owners/?search=...` (see Cars), then pass the selected name here to show records across **all cars of that owner**. Applies to the **sessions**, **shifts**, and **cars** reports; the **expenses** report ignores it (expenses have no car association). For the shift report a shift matches if it contains at least one session for one of that owner's cars.
 - `date_from` / `date_to` — `YYYY-MM-DD`, inclusive, filtered on `started_at` (sessions) / `shift_start` (shifts) / `date` (expenses).
 
 **Session report row**: `shift_id, staff_name, station_name, charger_name, port, car_plate, starting_car_percentage, ending_car_percentage, watt_consumed, is_estimated, duration, total_price, started_at, ended_at`. `total_price` ("paid") is the same auto-calculated value from the session itself — never entered directly.
