@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card, Button, Input, Select, PageHeader, EmptyState, Loading, Badge, TableSkeleton } from "../components/Shared";
+import { Card, Button, Input, Select, PageHeader, EmptyState, Loading, Badge, TableSkeleton, Pagination } from "../components/Shared";
 import { IconStation, IconUsers, IconCharger, IconPlus, IconTrash } from "../components/Icons";
 import { useAdminStations, useAdminEmployees, useAdminChargers, type StationPayload, type EmployeePayload, type ChargerPayload } from "../hooks/useAdmin";
 
@@ -128,7 +128,7 @@ export const AdminStations: React.FC = () => {
 // ─── AdminEmployees ───────────────────────────────────────────────────────────
 
 export const AdminEmployees: React.FC = () => {
-  const { employees, loading, createEmployee, deleteEmployee } = useAdminEmployees();
+  const { employees, loading, page, totalPages, count, changePage, createEmployee, deleteEmployee } = useAdminEmployees();
   const [isAdding, setIsAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<EmployeePayload>({
@@ -229,6 +229,13 @@ export const AdminEmployees: React.FC = () => {
             </tbody>
           </table>
           </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            count={count}
+            loading={loading}
+            onPageChange={changePage}
+          />
         </Card>
       )}
     </div>
@@ -238,7 +245,7 @@ export const AdminEmployees: React.FC = () => {
 // ─── AdminChargers ────────────────────────────────────────────────────────────
 
 export const AdminChargers: React.FC = () => {
-  const { chargers, loading, createCharger, deleteCharger } = useAdminChargers();
+  const { chargers, loading, page, totalPages, count, changePage, createCharger, deleteCharger } = useAdminChargers();
   const { stations } = useAdminStations();
   const [isAdding, setIsAdding] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -295,6 +302,7 @@ export const AdminChargers: React.FC = () => {
       {loading ? (
         <Loading label="Tegereza..." />
       ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {chargers.map(c => (
             <Card key={c.id}>
@@ -345,6 +353,14 @@ export const AdminChargers: React.FC = () => {
             </div>
           )}
         </div>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          count={count}
+          loading={loading}
+          onPageChange={changePage}
+        />
+        </>
       )}
     </div>
   );

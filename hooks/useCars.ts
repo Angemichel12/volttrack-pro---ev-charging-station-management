@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { successToast, errorToast } from "@/utils/toast";
 import api from "@/utils/axios";
 import { safeArray } from "@/utils/safeArray";
+import { unwrapPage, emptyPageMeta, type PageMeta } from "@/utils/pagination";
 import type { Car } from "./useStaff";
 
 export type { Car };
@@ -72,12 +73,15 @@ export const useCarOwners = () => {
 export const useCars = () => {
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(false);
+  const [meta, setMeta] = useState<PageMeta>(emptyPageMeta);
 
-  const fetchCars = useCallback(async () => {
+  const fetchCars = useCallback(async (page: number = 1) => {
     setLoading(true);
     try {
-      const res = await api.get("api/cars/");
-      setCars(safeArray<Car>(res.data?.data));
+      const res = await api.get("api/cars/", { params: { page } });
+      const pg = unwrapPage<Car>(res.data?.data);
+      setCars(pg.results);
+      setMeta(pg);
     } catch {
       errorToast("Failed to load cars");
       setCars([]);
@@ -86,12 +90,13 @@ export const useCars = () => {
     }
   }, []);
 
-  useEffect(() => { fetchCars(); }, [fetchCars]);
+  useEffect(() => { fetchCars(1); }, [fetchCars]);
 
   const createCar = async (payload: CarPayload): Promise<boolean> => {
     try {
       const res = await api.post("api/cars/", payload);
       setCars(prev => [...prev, res.data.data]);
+      setMeta(m => ({ ...m, count: m.count + 1 }));
       successToast("Car added / Imodoka yanditswe");
       return true;
     } catch (e: any) {
@@ -116,6 +121,7 @@ export const useCars = () => {
     try {
       await api.delete(`api/cars/${id}/`);
       setCars(prev => prev.filter(c => c.id !== id));
+      setMeta(m => ({ ...m, count: Math.max(0, m.count - 1) }));
       successToast("Car deleted / Imodoka yasibwe");
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to delete car");
@@ -150,5 +156,18 @@ export const useCars = () => {
     }
   };
 
-  return { cars, loading, fetchCars, createCar, updateCar, deleteCar, fetchBalance, payCar };
+  return {
+    cars,
+    loading,
+    page: meta.page,
+    totalPages: meta.total_pages,
+    count: meta.count,
+    changePage: fetchCars,
+    fetchCars,
+    createCar,
+    updateCar,
+    deleteCar,
+    fetchBalance,
+    payCar,
+  };
 };

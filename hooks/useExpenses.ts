@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { successToast, errorToast } from "@/utils/toast";
 import api from "@/utils/axios";
-import { safeArray } from "@/utils/safeArray";
+import { unwrapPage, emptyPageMeta, type PageMeta } from "@/utils/pagination";
 
 // ─── Types (per /api/expenses/ contract — admin only) ─────────────────────────
 
@@ -31,19 +31,21 @@ export interface ExpenseFilters {
 export const useExpenses = (filters: ExpenseFilters) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [meta, setMeta] = useState<PageMeta>(emptyPageMeta);
 
   const { station, date_from, date_to } = filters;
 
-  const fetchExpenses = useCallback(async () => {
+  const fetchExpenses = useCallback(async (page: number = 1) => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (station) params.set("station", String(station));
-    if (date_from) params.set("date_from", date_from);
-    if (date_to) params.set("date_to", date_to);
-    const qs = params.toString();
+    const params: Record<string, string | number> = { page };
+    if (station) params.station = station;
+    if (date_from) params.date_from = date_from;
+    if (date_to) params.date_to = date_to;
     try {
-      const res = await api.get(`api/expenses/${qs ? `?${qs}` : ""}`);
-      setExpenses(safeArray<Expense>(res.data?.data));
+      const res = await api.get("api/expenses/", { params });
+      const pg = unwrapPage<Expense>(res.data?.data);
+      setExpenses(pg.results);
+      setMeta(pg);
     } catch {
       errorToast("Failed to load expenses");
       setExpenses([]);
@@ -52,12 +54,14 @@ export const useExpenses = (filters: ExpenseFilters) => {
     }
   }, [station, date_from, date_to]);
 
-  useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
+  // Filters change → refetch from page 1.
+  useEffect(() => { fetchExpenses(1); }, [fetchExpenses]);
 
   const createExpense = async (payload: ExpensePayload): Promise<boolean> => {
     try {
       const res = await api.post("api/expenses/", payload);
       setExpenses(prev => [res.data.data, ...prev]);
+      setMeta(m => ({ ...m, count: m.count + 1 }));
       successToast("Expense recorded");
       return true;
     } catch (e: any) {
@@ -82,11 +86,23 @@ export const useExpenses = (filters: ExpenseFilters) => {
     try {
       await api.delete(`api/expenses/${id}/`);
       setExpenses(prev => prev.filter(x => x.id !== id));
+      setMeta(m => ({ ...m, count: Math.max(0, m.count - 1) }));
       successToast("Expense deleted");
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to delete expense");
     }
   };
 
-  return { expenses, loading, refresh: fetchExpenses, createExpense, updateExpense, deleteExpense };
+  return {
+    expenses,
+    loading,
+    page: meta.page,
+    totalPages: meta.total_pages,
+    count: meta.count,
+    changePage: fetchExpenses,
+    refresh: fetchExpenses,
+    createExpense,
+    updateExpense,
+    deleteExpense,
+  };
 };

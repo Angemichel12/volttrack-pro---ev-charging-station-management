@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Card, StatCard, Button, Input, Select, Modal, PageHeader, EmptyState, Table, TableSkeleton } from "../components/Shared";
+import { Card, StatCard, Button, Input, Select, Modal, PageHeader, EmptyState, Table, TableSkeleton, Pagination } from "../components/Shared";
 import { IconWallet, IconPlus, IconTrash, IconPencil, IconMoney, IconChart } from "../components/Icons";
 import { useExpenses, type Expense, type ExpensePayload } from "../hooks/useExpenses";
 import { useAdminStations } from "../hooks/useAdmin";
@@ -18,7 +18,7 @@ export const ExpensesPage: React.FC = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const { expenses, loading, createExpense, updateExpense, deleteExpense } = useExpenses({
+  const { expenses, loading, page, totalPages, count, changePage, createExpense, updateExpense, deleteExpense } = useExpenses({
     station: stationFilter ? parseInt(stationFilter) : undefined,
     date_from: dateFrom || undefined,
     date_to: dateTo || undefined,
@@ -95,11 +95,18 @@ export const ExpensesPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* ── Totals ────────────────────────────────────────────────── */}
+      {/* ── Totals (sum of the loaded page) ───────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <StatCard label="Amount (no VAT)" value={rwf(totals.amount)} icon={<IconMoney className="w-5 h-5" />} />
-        <StatCard label="VAT / TVA" value={rwf(totals.vat)} icon={<IconChart className="w-5 h-5" />} />
-        <StatCard label="Total / Yose" value={rwf(totals.total)} icon={<IconWallet className="w-5 h-5" />} tone="red" />
+        {(() => {
+          const sub = totalPages > 1 ? "This page / Uru rupapuro" : undefined;
+          return (
+            <>
+              <StatCard label="Amount (no VAT)" value={rwf(totals.amount)} icon={<IconMoney className="w-5 h-5" />} sub={sub} />
+              <StatCard label="VAT / TVA" value={rwf(totals.vat)} icon={<IconChart className="w-5 h-5" />} sub={sub} />
+              <StatCard label="Total / Yose" value={rwf(totals.total)} icon={<IconWallet className="w-5 h-5" />} tone="red" sub={sub} />
+            </>
+          );
+        })()}
       </div>
 
       {/* ── List ──────────────────────────────────────────────────── */}
@@ -149,6 +156,13 @@ export const ExpensesPage: React.FC = () => {
               );
             })}
           </Table>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            count={count}
+            loading={loading}
+            onPageChange={changePage}
+          />
         </Card>
       )}
 

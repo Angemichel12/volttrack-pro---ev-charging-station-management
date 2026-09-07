@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { successToast, errorToast } from "@/utils/toast";
 import api from "@/utils/axios";
 import { safeArray } from "@/utils/safeArray";
+import { unwrapPage, emptyPageMeta, type PageMeta } from "@/utils/pagination";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -78,7 +79,7 @@ export const useAdminStations = () => {
     setLoading(true);
     try {
       const res = await api.get("api/stations/");
-      setStations(safeArray<Station>(res.data.data));
+      setStations(unwrapPage<Station>(res.data?.data).results);
     } catch {
       errorToast("Failed to load stations");
       setStations([]);
@@ -143,12 +144,15 @@ export const useAdminStations = () => {
 export const useAdminEmployees = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
+  const [meta, setMeta] = useState<PageMeta>(emptyPageMeta);
 
-  const fetchEmployees = useCallback(async () => {
+  const fetchEmployees = useCallback(async (page: number = 1) => {
     setLoading(true);
     try {
-      const res = await api.get("api/admin/users/?role=staff");
-      setEmployees(safeArray<Employee>(res.data.data));
+      const res = await api.get("api/admin/users/", { params: { role: "staff", page } });
+      const pg = unwrapPage<Employee>(res.data?.data);
+      setEmployees(pg.results);
+      setMeta(pg);
     } catch {
       errorToast("Failed to load employees");
       setEmployees([]);
@@ -157,12 +161,13 @@ export const useAdminEmployees = () => {
     }
   }, []);
 
-  useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
+  useEffect(() => { fetchEmployees(1); }, [fetchEmployees]);
 
   const createEmployee = async (payload: EmployeePayload) => {
     try {
       const res = await api.post("api/admin/users/", payload);
       setEmployees(prev => [...prev, res.data.data]);
+      setMeta(m => ({ ...m, count: m.count + 1 }));
       successToast("Employee created");
       return true;
     } catch (e: any) {
@@ -187,13 +192,25 @@ export const useAdminEmployees = () => {
     try {
       await api.delete(`api/admin/users/${id}/`);
       setEmployees(prev => prev.filter(e => e.id !== id));
+      setMeta(m => ({ ...m, count: Math.max(0, m.count - 1) }));
       successToast("Employee deleted");
     } catch {
       errorToast("Failed to delete employee");
     }
   };
 
-  return { employees, loading, fetchEmployees, createEmployee, updateEmployee, deleteEmployee };
+  return {
+    employees,
+    loading,
+    page: meta.page,
+    totalPages: meta.total_pages,
+    count: meta.count,
+    changePage: fetchEmployees,
+    fetchEmployees,
+    createEmployee,
+    updateEmployee,
+    deleteEmployee,
+  };
 };
 
 // ─── useAdminChargers ─────────────────────────────────────────────────────────
@@ -201,12 +218,15 @@ export const useAdminEmployees = () => {
 export const useAdminChargers = () => {
   const [chargers, setChargers] = useState<Charger[]>([]);
   const [loading, setLoading] = useState(false);
+  const [meta, setMeta] = useState<PageMeta>(emptyPageMeta);
 
-  const fetchChargers = useCallback(async () => {
+  const fetchChargers = useCallback(async (page: number = 1) => {
     setLoading(true);
     try {
-      const res = await api.get("api/chargers/");
-      setChargers(safeArray<Charger>(res.data?.data));
+      const res = await api.get("api/chargers/", { params: { page } });
+      const pg = unwrapPage<Charger>(res.data?.data);
+      setChargers(pg.results);
+      setMeta(pg);
     } catch {
       errorToast("Failed to load chargers");
       setChargers([]);
@@ -215,12 +235,13 @@ export const useAdminChargers = () => {
     }
   }, []);
 
-  useEffect(() => { fetchChargers(); }, [fetchChargers]);
+  useEffect(() => { fetchChargers(1); }, [fetchChargers]);
 
   const createCharger = async (payload: ChargerPayload): Promise<boolean> => {
     try {
       const res = await api.post("api/chargers/", payload);
       setChargers(prev => [...prev, res.data.data]);
+      setMeta(m => ({ ...m, count: m.count + 1 }));
       successToast("Charger created");
       return true;
     } catch (e: any) {
@@ -233,13 +254,24 @@ export const useAdminChargers = () => {
     try {
       await api.delete(`api/chargers/${id}/`);
       setChargers(prev => prev.filter(c => c.id !== id));
+      setMeta(m => ({ ...m, count: Math.max(0, m.count - 1) }));
       successToast("Charger deleted");
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to delete charger");
     }
   };
 
-  return { chargers, loading, fetchChargers, createCharger, deleteCharger };
+  return {
+    chargers,
+    loading,
+    page: meta.page,
+    totalPages: meta.total_pages,
+    count: meta.count,
+    changePage: fetchChargers,
+    fetchChargers,
+    createCharger,
+    deleteCharger,
+  };
 };
 
 // ─── useAdminReports ──────────────────────────────────────────────────────────

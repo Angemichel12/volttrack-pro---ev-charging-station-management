@@ -19,6 +19,30 @@ Reference for integrating a frontend (or another service) with the VoltTrack API
 
 `errors` mirrors DRF's field-error shape when validation fails (e.g. `{"phone_number": ["This field is required."]}`).
 
+## Pagination
+
+All list endpoints are paginated (cars, users, stations, chargers, shift history, expenses, `my-sessions`). Their `data` is an object, not a bare array:
+
+```json
+{
+  "success": true,
+  "message": "Success",
+  "data": {
+    "results": [ ... ],   // the page of items
+    "count": 137,          // total items across all pages
+    "page": 1,             // current page number (1-based)
+    "page_size": 20,       // items per page
+    "total_pages": 7,
+    "next": "http://.../api/cars/?page=2",     // or null
+    "previous": null                            // or null
+  }
+}
+```
+
+Query params (all lists): `page` (1-based, default 1) and `page_size` (default 20, max 200). `limit` is accepted as an alias for `page_size`. Other filters (e.g. `role`, `station`, `date_from`) still apply and combine with pagination.
+
+Picker/autocomplete endpoints are **not** paginated — they return a bare array and cap results server-side: the type-ahead `search-car/`, the `cars/owners/` autocomplete, the station list (`GET /api/stations/`, feeds the shift-open dropdown), and the staff station-chargers view. Reports and dashboard endpoints are also not paginated (they return aggregates / export-parity rows).
+
 ## Roles
 
 - **admin** — manages users, stations, cars, chargers; sees system-wide reports.
@@ -136,9 +160,11 @@ Full CRUD, but the response shape and what you're allowed to set depends on role
 |---|---|---|---|---|
 | POST | `register-car/` | admin or staff | `plate_number, owner_name?, phone_number?, optional_info?` | Get-or-create by plate — convenience wrapper around `/api/cars/` for the shift flow. No `unique_price` here either way. |
 | GET | `search-car/?plate=...` | admin or staff | — | **Type-ahead**: `plate` matches anywhere in the plate number (case-insensitive), returns up to 20 matches ordered by plate. Meant to be called on every keystroke so the user can pick the right plate before starting a session; returns `[]` (not 404) when nothing matches yet. |
-| POST | `start/` | staff | `charger_id, port ("left"/"right"), plate_number, starting_car_percentage` | Requires an open shift; charger must belong to that shift's station; the chosen `port` must not already have an active session on that charger. |
+| POST | `start/` | staff | `charger_id, port ("left"/"right"), plate_number, starting_car_percentage, started_at?` | Requires an open shift; charger must belong to that shift's station; the chosen `port` must not already have an active session on that charger. `started_at` is optional — omit it and the session starts "now"; supply an ISO-8601 datetime to record a past charge with its real start time. |
+| POST | `manual/` | admin or staff (staff: own only) | `charger, port, plate_number` (required) + optional `staff` (admin only), `shift`, `starting_car_percentage`, `ending_car_percentage`, `watt_consumed`, `is_estimated`, `started_at`, `ended_at` | **Manually insert a full/complete session record** — for backfilling a past charge. Unlike `start/` it does **not** require an open shift. Station is derived from the charger. `staff` defaults to the caller (staff can only insert their own; admin may name any staff). `shift` is optional: if omitted it falls back to the target staff's currently open shift (if any), else left empty — note a backdated record attached to an open shift counts toward that shift's totals when it closes, so pass `shift` explicitly (or omit while off-shift) to avoid that. `started_at` defaults to now. `total_price`/`is_paid`/`amount_paid` are still computed server-side from `watt_consumed` and the car's prepaid/postpaid status. Rejected if `ended_at` < `started_at`, `ending%` < `starting%`, or (for a still-active record) the port is already in use. |
+| PATCH | `<session_id>/update/` | admin or staff (staff: own only) | any of `started_at, ended_at, starting_car_percentage, ending_car_percentage, watt_consumed, port` | Edit an existing session — e.g. backdate `started_at` for a charge entered late, or fix the metered kWh. Only the fields sent are changed. Changing `watt_consumed` recomputes `total_price` (and settles prepaid cars) server-side. Rejected if `ended_at` < `started_at`, if `ending_car_percentage` < `starting_car_percentage`, or if moving an active session onto a port already in use. Derived fields (`total_price`, `is_paid`, `amount_paid`) are never taken from the request. |
 | POST | `end/` | staff | `session_id, watt_consumed, ending_car_percentage` (or `session_id, ending_car_percentage, power_outage=true`) | Computes `total_price` (car `unique_price` else station `price_per_watt`) and `duration`. **Power-outage estimate**: when the grid cut mid-charge and the meter can't be read, send `power_outage=true` and omit `watt_consumed` — the kWh used is estimated from the car's past sessions (average kWh per battery %, applied to this session's start→end %) and flagged `is_estimated=true`. If the car has no prior history, the request is rejected and staff must enter `watt_consumed` manually. |
-| GET | `my-sessions/` | staff | — | Staff's own sessions, all stations, newest first. |
+| GET | `my-sessions/` | staff | — | Staff's own sessions, all stations, newest first. **Paginated** (see the pagination note below). |
 
 `ChargingSession` fields returned: `station, station_name, charger, charger_name, port, staff, shift, car, car_plate, starting_car_percentage, ending_car_percentage, watt_consumed, is_estimated, total_price, is_paid, amount_paid, duration, started_at, ended_at`. `is_paid` is `false` for an unsettled postpaid charge. `is_estimated` is `true` when `watt_consumed` was auto-estimated after a power outage rather than metered.
 

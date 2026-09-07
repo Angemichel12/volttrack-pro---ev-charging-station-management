@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card, Button, Input, Badge, Modal, PageHeader, TableSkeleton, Loading } from "../components/Shared";
+import { Card, Button, Input, Badge, Modal, PageHeader, TableSkeleton, Loading, Pagination } from "../components/Shared";
 import { IconPlus, IconTrash, IconWallet, IconCheck } from "../components/Icons";
 import { useAuth } from "../context/AuthContext";
 import { useCars, type CarPayload, type Car, type CarBalanceResponse } from "../hooks/useCars";
@@ -16,7 +16,7 @@ const emptyForm: CarPayload = {
 
 export const CarManagement: React.FC = () => {
   const { isAdmin } = useAuth();
-  const { cars, loading, createCar, updateCar, deleteCar, fetchBalance, payCar } = useCars();
+  const { cars, loading, page, totalPages, count, changePage, createCar, updateCar, deleteCar, fetchBalance, payCar } = useCars();
   const [isAdding, setIsAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<CarPayload>(emptyForm);
@@ -249,6 +249,13 @@ export const CarManagement: React.FC = () => {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            count={count}
+            loading={loading}
+            onPageChange={changePage}
+          />
         </Card>
       )}
 

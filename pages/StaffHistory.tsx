@@ -1,17 +1,77 @@
 import React, { useState } from "react";
-import { Card, PageHeader, StatCard, TableSkeleton } from "../components/Shared";
-import { IconBolt, IconMoney, IconCharger, IconShift } from "../components/Icons";
-import { rwf, kw } from "../utils/format";
-import { useStaffHistory } from "../hooks/useStaff";
+import { Card, PageHeader, StatCard, TableSkeleton, Button, Input, Modal, Pagination } from "../components/Shared";
+import { IconBolt, IconMoney, IconCharger, IconShift, IconPencil, IconCheck } from "../components/Icons";
+import { rwf, kw, toDateTimeLocal, fromDateTimeLocal } from "../utils/format";
+import { useStaffHistory, type Session, type SessionUpdatePayload } from "../hooks/useStaff";
+
+// Blank form for the edit-session modal (all as strings for the inputs).
+// Port is intentionally omitted — it's an internal detail the app auto-assigns.
+interface EditForm {
+  started_at: string;
+  ended_at: string;
+  starting_car_percentage: string;
+  ending_car_percentage: string;
+  watt_consumed: string;
+}
 
 export const StaffHistory: React.FC = () => {
-  const { sessions, shifts, loading } = useStaffHistory();
+  const {
+    sessions,
+    shifts,
+    loading,
+    sessionsPage,
+    sessionsTotalPages,
+    sessionsCount,
+    changeSessionsPage,
+    shiftsPage,
+    shiftsTotalPages,
+    shiftsCount,
+    changeShiftsPage,
+    updateSession,
+  } = useStaffHistory();
   const [tab, setTab] = useState<"sessions" | "shifts">("sessions");
+
+  // ── Edit-session modal ────────────────────────────────────────────────────
+  const [editing, setEditing] = useState<Session | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const openEdit = (s: Session) => {
+    setEditing(s);
+    setEditForm({
+      started_at: toDateTimeLocal(s.started_at),
+      ended_at: toDateTimeLocal(s.ended_at),
+      starting_car_percentage: s.starting_car_percentage != null ? String(s.starting_car_percentage) : "",
+      ending_car_percentage: s.ending_car_percentage != null ? String(s.ending_car_percentage) : "",
+      watt_consumed: s.watt_consumed ?? "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editing || !editForm) return;
+    // Only send fields that carry a value — the API changes just what it receives.
+    const payload: SessionUpdatePayload = {};
+    const startIso = fromDateTimeLocal(editForm.started_at);
+    if (startIso) payload.started_at = startIso;
+    const endIso = fromDateTimeLocal(editForm.ended_at);
+    if (endIso) payload.ended_at = endIso;
+    if (editForm.starting_car_percentage !== "") payload.starting_car_percentage = parseFloat(editForm.starting_car_percentage);
+    if (editForm.ending_car_percentage !== "") payload.ending_car_percentage = parseFloat(editForm.ending_car_percentage);
+    if (editForm.watt_consumed !== "") payload.watt_consumed = editForm.watt_consumed;
+    setSavingEdit(true);
+    const updated = await updateSession(editing.id, payload);
+    setSavingEdit(false);
+    if (updated) { setEditing(null); setEditForm(null); }
+  };
 
   const completed = sessions.filter(s => s.ended_at !== null);
   const totalEarnings = completed.reduce((sum, s) => sum + parseFloat(s.total_price || "0"), 0);
   const totalWatt = completed.reduce((sum, s) => sum + parseFloat(s.watt_consumed || "0"), 0);
   const totalKwh = shifts.reduce((sum, s) => sum + parseFloat(s.total_kwatt_used_on_shift || "0"), 0);
+
+  // Summary tiles sum only the loaded page — flag that when there's more than one.
+  const pageScoped = (tab === "sessions" ? sessionsTotalPages : shiftsTotalPages) > 1;
+  const scopeSub = pageScoped ? "This page / Uru rupapuro" : undefined;
 
   return (
     <div className="space-y-6">
@@ -19,10 +79,10 @@ export const StaffHistory: React.FC = () => {
 
       {/* ── Summary ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Sessions / Gusharija" value={completed.length} icon={<IconCharger className="w-5 h-5" />} />
-        <StatCard label="Earnings / Ayinjiye" value={rwf(totalEarnings)} icon={<IconMoney className="w-5 h-5" />} tone="green" />
-        <StatCard label="kW used / kW zakoreshejwe" value={kw(totalWatt)} icon={<IconBolt className="w-5 h-5" />} />
-        <StatCard label="kWh (shifts)" value={`${totalKwh.toFixed(2)} kWh`} icon={<IconShift className="w-5 h-5" />} />
+        <StatCard label="Sessions / Gusharija" value={completed.length} icon={<IconCharger className="w-5 h-5" />} sub={scopeSub} />
+        <StatCard label="Earnings / Ayinjiye" value={rwf(totalEarnings)} icon={<IconMoney className="w-5 h-5" />} tone="green" sub={scopeSub} />
+        <StatCard label="kW used / kW zakoreshejwe" value={kw(totalWatt)} icon={<IconBolt className="w-5 h-5" />} sub={scopeSub} />
+        <StatCard label="kWh (shifts)" value={`${totalKwh.toFixed(2)} kWh`} icon={<IconShift className="w-5 h-5" />} sub={scopeSub} />
       </div>
 
       {/* ── Tabs ──────────────────────────────────────────────────── */}
@@ -43,12 +103,12 @@ export const StaffHistory: React.FC = () => {
       </div>
 
       {loading ? (
-        <Card><TableSkeleton rows={6} cols={tab === "sessions" ? 7 : 8} /></Card>
+        <Card><TableSkeleton rows={6} cols={tab === "sessions" ? 8 : 8} /></Card>
       ) : tab === "sessions" ? (
         // ── Sessions Table ────────────────────────────────────────
         <Card>
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px]">
+          <table className="w-full min-w-[720px]">
             <thead className="text-left border-b border-gray-100">
               <tr className="text-xs text-gray-400 uppercase tracking-wider">
                 <th className="pb-3 px-2">Plate / Plaque</th>
@@ -58,11 +118,12 @@ export const StaffHistory: React.FC = () => {
                 <th className="pb-3 px-2">Price / Igiciro</th>
                 <th className="pb-3 px-2">Start / Itangira</th>
                 <th className="pb-3 px-2">Status</th>
+                <th className="pb-3 px-2"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {sessions.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-8 text-gray-400">No sessions / Nta gusharija</td></tr>
+                <tr><td colSpan={8} className="text-center py-8 text-gray-400">No sessions / Nta gusharija</td></tr>
               )}
               {sessions.map(s => (
                 <tr key={s.id} className="text-sm">
@@ -94,11 +155,28 @@ export const StaffHistory: React.FC = () => {
                       {s.ended_at ? "Done / Byarangiye" : "Charging / Irasharija"}
                     </span>
                   </td>
+                  <td className="py-3 px-2 text-right">
+                    <button
+                      onClick={() => openEdit(s)}
+                      aria-label="Edit session"
+                      title="Edit / Hindura"
+                      className="p-1.5 text-gray-400 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                    >
+                      <IconPencil className="w-4 h-4" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
           </div>
+          <Pagination
+            page={sessionsPage}
+            totalPages={sessionsTotalPages}
+            count={sessionsCount}
+            loading={loading}
+            onPageChange={changeSessionsPage}
+          />
         </Card>
       ) : (
         // ── Shifts Table ──────────────────────────────────────────
@@ -148,8 +226,73 @@ export const StaffHistory: React.FC = () => {
             </tbody>
           </table>
           </div>
+          <Pagination
+            page={shiftsPage}
+            totalPages={shiftsTotalPages}
+            count={shiftsCount}
+            loading={loading}
+            onPageChange={changeShiftsPage}
+          />
         </Card>
       )}
+
+      {/* ── Edit session modal ────────────────────────────────────── */}
+      <Modal
+        open={editing !== null}
+        onClose={() => { setEditing(null); setEditForm(null); }}
+        title={editing ? `Edit / Hindura · ${editing.car_plate}` : ""}
+      >
+        {editForm && (
+          <div className="space-y-4">
+            <p className="text-xs text-gray-400">
+              Leave a field as-is to keep it. Price is recalculated automatically. /
+              Usiga uko kimeze ntikihinduka. Igiciro kibarwa nyuma.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Started / Yatangiye"
+                type="datetime-local"
+                value={editForm.started_at}
+                onChange={e => setEditForm({ ...editForm, started_at: e.target.value })}
+              />
+              <Input
+                label="Ended / Yarangiye"
+                type="datetime-local"
+                value={editForm.ended_at}
+                onChange={e => setEditForm({ ...editForm, ended_at: e.target.value })}
+              />
+              <Input
+                label="Start battery (%) / Batiri itangira"
+                type="number"
+                min={0}
+                max={100}
+                value={editForm.starting_car_percentage}
+                onChange={e => setEditForm({ ...editForm, starting_car_percentage: e.target.value })}
+              />
+              <Input
+                label="End battery (%) / Batiri iherezo"
+                type="number"
+                min={0}
+                max={100}
+                value={editForm.ending_car_percentage}
+                onChange={e => setEditForm({ ...editForm, ending_car_percentage: e.target.value })}
+              />
+              <Input
+                label="kW used / kW zakoreshejwe"
+                type="number"
+                min={0}
+                step="0.01"
+                value={editForm.watt_consumed}
+                onChange={e => setEditForm({ ...editForm, watt_consumed: e.target.value })}
+              />
+            </div>
+            <Button className="w-full py-3" onClick={handleSaveEdit} disabled={savingEdit}>
+              <IconCheck className="w-4 h-4" />
+              {savingEdit ? "Tegereza..." : "Save / Bika"}
+            </Button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

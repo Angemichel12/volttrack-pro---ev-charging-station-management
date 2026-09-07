@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { successToast, errorToast } from "@/utils/toast";
 import api from "@/utils/axios";
 import { safeArray } from "@/utils/safeArray";
+import { unwrapPage, emptyPageMeta, type PageMeta } from "@/utils/pagination";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,32 @@ export interface Session {
   duration: string | null;
   started_at: string;
   ended_at: string | null;
+}
+
+// Fields the backend lets you edit on an existing session via
+// PATCH /api/sessions/<id>/update/. Only the fields sent are changed; derived
+// values (total_price, is_paid, amount_paid, duration) are recomputed server-side.
+export interface SessionUpdatePayload {
+  started_at?: string;              // ISO-8601
+  ended_at?: string;                // ISO-8601
+  starting_car_percentage?: number;
+  ending_car_percentage?: number;
+  watt_consumed?: string;
+  port?: PortSide;
+}
+
+// A complete past charge entered after the fact. There's no single "create
+// finished session" endpoint, so this is composed of start → end → (correct
+// the end time) under the hood — see `addManualSession`.
+export interface ManualSessionInput {
+  charger_id: number;
+  port: PortSide;
+  plate_number: string;
+  starting_car_percentage: number;
+  ending_car_percentage: number;
+  watt_consumed: string;
+  started_at?: string;              // ISO-8601 — when the charge really began
+  ended_at?: string;                // ISO-8601 — when it really finished
 }
 
 export interface ShiftRecord {
@@ -117,7 +144,7 @@ export const useStations = () => {
     setLoading(true);
     try {
       const res = await api.get("api/stations/");
-      setStations(safeArray<StationOption>(res.data?.data));
+      setStations(unwrapPage<StationOption>(res.data?.data).results);
     } catch {
       setStations([]);
     } finally {
@@ -165,8 +192,7 @@ export const useStationChargers = () => {
     setLoading(true);
     try {
       const res = await api.get("api/stations/chargers/");
-      const raw = res.data?.data ?? res.data;
-      setChargers(safeArray<StationCharger>(raw));
+      setChargers(unwrapPage<StationCharger>(res.data?.data ?? res.data).results);
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to load chargers");
       setChargers([]);
@@ -256,8 +282,10 @@ export const useSession = () => {
   const fetchMySessions = useCallback(async () => {
     setLoading(true);
     try {
+      // my-sessions is paginated & newest-first, so any still-active session is
+      // on the first page — that's all we need for the "charging now" list.
       const res = await api.get("api/sessions/my-sessions/");
-      const all = safeArray<Session>(res.data?.data);
+      const all = unwrapPage<Session>(res.data?.data).results;
       setActiveSessions(all.filter(s => s.ended_at === null));
     } catch {
       errorToast("Failed to load sessions");
@@ -309,7 +337,77 @@ export const useSession = () => {
     }
   };
 
-  return { activeSessions, loading, startSession, endSession, fetchMySessions };
+  // Record a charge that already happened, start-to-finish, in one action.
+  // The API has no "create completed session" call, so we compose it:
+  //   1. start (backdated with started_at) — claims a free charger port
+  //   2. end (watt_consumed + ending %) — prices it and settles prepaid cars
+  //   3. update ended_at — so the finish time reflects reality, not "now"
+  // Returns the finished, priced session (for the confirmation popup). If step 1
+  // succeeds but a later step fails, the half-started session is left active so
+  // the staff can see it and finish it by hand.
+  const addManualSession = async (input: ManualSessionInput): Promise<Session | null> => {
+    try {
+      const startRes = await api.post("api/sessions/start/", {
+        charger_id: input.charger_id,
+        port: input.port,
+        plate_number: input.plate_number,
+        starting_car_percentage: input.starting_car_percentage,
+        ...(input.started_at ? { started_at: input.started_at } : {}),
+      });
+      const started = startRes.data.data as Session;
+
+      const endRes = await api.post("api/sessions/end/", {
+        session_id: started.id,
+        watt_consumed: input.watt_consumed,
+        ending_car_percentage: input.ending_car_percentage,
+      });
+      let finished = endRes.data.data as Session;
+
+      if (input.ended_at) {
+        const upRes = await api.patch(`api/sessions/${started.id}/update/`, { ended_at: input.ended_at });
+        finished = (upRes.data.data as Session) ?? finished;
+      }
+
+      // Completed, so it never joins the "charging now" list; drop it if the
+      // optimistic start added it.
+      setActiveSessions(prev => prev.filter(s => s.id !== finished.id));
+      successToast("Session added / Gusharija byanditswe");
+      return finished;
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to add session / Byanze");
+      // Surface any orphaned active session from a partial failure.
+      fetchMySessions();
+      return null;
+    }
+  };
+
+  // Edit an existing session (backdate a charge entered late, fix the metered
+  // kWh, correct percentages, or move it to the other port). Only the fields you
+  // pass are changed; the server recomputes total_price/is_paid/duration.
+  const updateSession = async (
+    session_id: number,
+    payload: SessionUpdatePayload
+  ): Promise<Session | null> => {
+    try {
+      const res = await api.patch(`api/sessions/${session_id}/update/`, payload);
+      const updated = (res.data.data as Session) ?? null;
+      if (updated) {
+        setActiveSessions(prev =>
+          // Keep it in the active list only while it's still unfinished.
+          updated.ended_at === null
+            ? prev.map(s => (s.id === session_id ? updated : s))
+            : prev.filter(s => s.id !== session_id)
+        );
+      }
+      successToast("Session updated / Byahinduwe");
+      return updated;
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to update session / Byanze");
+      return null;
+    }
+  };
+
+  return { activeSessions, loading, startSession, endSession, addManualSession, updateSession, fetchMySessions };
 };
 
 // ─── useRegisterCar ───────────────────────────────────────────────────────────
@@ -354,30 +452,70 @@ export const useRegisterCar = () => {
 export const useStaffHistory = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [shifts, setShifts] = useState<ShiftRecord[]>([]);
+  const [sessionsMeta, setSessionsMeta] = useState<PageMeta>(emptyPageMeta);
+  const [shiftsMeta, setShiftsMeta] = useState<PageMeta>(emptyPageMeta);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        const [sessionsRes, shiftsRes] = await Promise.all([
-          api.get("api/sessions/my-sessions/"),
-          api.get("api/chargers/shifts/history/"),
-        ]);
-        setSessions(safeArray<Session>(sessionsRes.data?.data));
-        setShifts(safeArray<ShiftRecord>(shiftsRes.data?.data));
-      } catch {
-        errorToast("Failed to load history");
-        setSessions([]);
-        setShifts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
+  const fetchSessions = useCallback(async (page: number = 1) => {
+    try {
+      const res = await api.get("api/sessions/my-sessions/", { params: { page } });
+      const pg = unwrapPage<Session>(res.data?.data);
+      setSessions(pg.results);
+      setSessionsMeta(pg);
+    } catch {
+      errorToast("Failed to load sessions");
+      setSessions([]);
+    }
   }, []);
 
-  return { sessions, shifts, loading };
+  const fetchShifts = useCallback(async (page: number = 1) => {
+    try {
+      const res = await api.get("api/chargers/shifts/history/", { params: { page } });
+      const pg = unwrapPage<ShiftRecord>(res.data?.data);
+      setShifts(pg.results);
+      setShiftsMeta(pg);
+    } catch {
+      errorToast("Failed to load shifts");
+      setShifts([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([fetchSessions(1), fetchShifts(1)]).finally(() => setLoading(false));
+  }, [fetchSessions, fetchShifts]);
+
+  // Edit one of the staff's own past sessions; reflect the recomputed row in place.
+  const updateSession = async (
+    session_id: number,
+    payload: SessionUpdatePayload
+  ): Promise<Session | null> => {
+    try {
+      const res = await api.patch(`api/sessions/${session_id}/update/`, payload);
+      const updated = res.data.data as Session;
+      setSessions(prev => prev.map(s => (s.id === session_id ? updated : s)));
+      successToast("Session updated / Byahinduwe");
+      return updated;
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to update session / Byanze");
+      return null;
+    }
+  };
+
+  return {
+    sessions,
+    shifts,
+    loading,
+    sessionsPage: sessionsMeta.page,
+    sessionsTotalPages: sessionsMeta.total_pages,
+    sessionsCount: sessionsMeta.count,
+    changeSessionsPage: fetchSessions,
+    shiftsPage: shiftsMeta.page,
+    shiftsTotalPages: shiftsMeta.total_pages,
+    shiftsCount: shiftsMeta.count,
+    changeShiftsPage: fetchShifts,
+    updateSession,
+  };
 };
 
 // ─── useStaffReports ──────────────────────────────────────────────────────────

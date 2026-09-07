@@ -1,5 +1,5 @@
 import React from "react";
-import { IconClose } from "./Icons";
+import { IconClose, IconArrowRight } from "./Icons";
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
@@ -239,6 +239,45 @@ export const Modal: React.FC<{ open: boolean; onClose: () => void; title?: strin
           </button>
         </div>
         <div className="p-4 sm:p-6">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+// Prev/Next control for paginated lists. Renders nothing for a single page.
+
+export const Pagination: React.FC<{
+  page: number;
+  totalPages: number;
+  count?: number;
+  loading?: boolean;
+  onPageChange: (page: number) => void;
+}> = ({ page, totalPages, count, loading, onPageChange }) => {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between gap-3 pt-1">
+      <p className="text-xs text-gray-400">
+        Page {page} / {totalPages}
+        {typeof count === "number" && <span> · {count} total</span>}
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          className="!px-3"
+          disabled={page <= 1 || loading}
+          onClick={() => onPageChange(page - 1)}
+        >
+          <IconArrowRight className="w-4 h-4 rotate-180" /> Prev
+        </Button>
+        <Button
+          variant="outline"
+          className="!px-3"
+          disabled={page >= totalPages || loading}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next <IconArrowRight className="w-4 h-4" />
+        </Button>
       </div>
     </div>
   );

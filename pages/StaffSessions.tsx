@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, Button, Input, Select, Modal, PageHeader, EmptyState, Loading, Badge } from "../components/Shared";
 import { IconBolt, IconCharger, IconPlus, IconCheck, IconClock, IconBattery, IconShift, IconMoney } from "../components/Icons";
-import { rwf, kw } from "../utils/format";
+import { rwf, kw, fromDateTimeLocal } from "../utils/format";
+import { errorToast } from "../utils/toast";
 import { useStaffDashboard, useSession, useStationChargers, useRegisterCar, type Car, type Session } from "../hooks/useStaff";
 
 // The staff working screen: start charging sessions and end the active ones.
@@ -10,7 +11,7 @@ import { useStaffDashboard, useSession, useStationChargers, useRegisterCar, type
 export const StaffSessionsPage: React.FC = () => {
   const navigate = useNavigate();
   const { data, loading: dashLoading } = useStaffDashboard();
-  const { activeSessions, loading: sessionsLoading, startSession, endSession } = useSession();
+  const { activeSessions, loading: sessionsLoading, startSession, endSession, addManualSession } = useSession();
   const { chargers, loading: chargersLoading, refresh: refreshChargers } = useStationChargers();
   const { registerCar, searchCar, loading: carLoading } = useRegisterCar();
 
@@ -35,6 +36,14 @@ export const StaffSessionsPage: React.FC = () => {
   const [carPhoneInput, setCarPhoneInput] = useState("");
   const [carInfoInput, setCarInfoInput] = useState("");
   const [registering, setRegistering] = useState(false);
+
+  // ── "Add past session" (manual) mode — extra fields for a finished charge ──
+  const [manualMode, setManualMode] = useState(false);
+  const [manualEndPct, setManualEndPct] = useState("");
+  const [manualWatt, setManualWatt] = useState("");
+  const [manualStartedAt, setManualStartedAt] = useState("");
+  const [manualEndedAt, setManualEndedAt] = useState("");
+  const [addingManual, setAddingManual] = useState(false);
 
   const openShift = data?.open_shift ?? null;
   const selectedCharger = chargers.find(c => String(c.id) === chargerId) ?? null;
@@ -64,6 +73,11 @@ export const StaffSessionsPage: React.FC = () => {
     setOwnerNameInput("");
     setCarPhoneInput("");
     setCarInfoInput("");
+    setManualMode(false);
+    setManualEndPct("");
+    setManualWatt("");
+    setManualStartedAt("");
+    setManualEndedAt("");
   };
 
   const handlePlateQueryChange = (value: string) => {
@@ -105,6 +119,42 @@ export const StaffSessionsPage: React.FC = () => {
     if (ok) {
       closeModal();
       refreshChargers();
+    }
+  };
+
+  // Record a charge that already finished — start%, end%, kWh and (optional) real
+  // start/end times, priced in one go via the same flow as a live session.
+  const handleAddManual = async () => {
+    const freePort = selectedCharger?.ports.find(p => p.available)?.port;
+    if (!selectedCar || !chargerId || !freePort || !startPctInput || !manualEndPct || !manualWatt) return;
+    const startPct = parseFloat(startPctInput);
+    const endPct = parseFloat(manualEndPct);
+    if (endPct <= startPct) {
+      errorToast("End battery % must be greater than start % / Iherezo rigomba kurenga itangira");
+      return;
+    }
+    const startedIso = fromDateTimeLocal(manualStartedAt);
+    const endedIso = fromDateTimeLocal(manualEndedAt);
+    if (startedIso && endedIso && new Date(endedIso) < new Date(startedIso)) {
+      errorToast("End time must be after start time / Iherezo rigomba kurenga itangira");
+      return;
+    }
+    setAddingManual(true);
+    const finished = await addManualSession({
+      charger_id: parseInt(chargerId),
+      port: freePort,
+      plate_number: selectedCar.plate_number,
+      starting_car_percentage: startPct,
+      ending_car_percentage: endPct,
+      watt_consumed: manualWatt,
+      started_at: startedIso,
+      ended_at: endedIso,
+    });
+    setAddingManual(false);
+    if (finished) {
+      closeModal();
+      refreshChargers();
+      setEndedSession(finished); // reuse the calculated-price popup
     }
   };
 
@@ -166,16 +216,45 @@ export const StaffSessionsPage: React.FC = () => {
           <h3 className="font-bold text-lg">Start Charging / Tangira Gusharija</h3>
           <p className="text-sm text-white/80 mt-0.5">Car + charger. / Imodoka + charger.</p>
         </div>
-        <Button
-          onClick={() => setModalOpen(true)}
-          className="!bg-white !text-green-800 font-bold hover:!bg-green-50 shrink-0 w-full sm:w-auto"
-        >
-          <IconPlus className="w-4 h-4" /> Start / Tangira
-        </Button>
+        <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+          <Button
+            onClick={() => { setManualMode(false); setModalOpen(true); }}
+            className="!bg-white !text-green-800 font-bold hover:!bg-green-50 flex-1 sm:flex-none"
+          >
+            <IconPlus className="w-4 h-4" /> Start / Tangira
+          </Button>
+          <Button
+            onClick={() => { setManualMode(true); setModalOpen(true); }}
+            variant="outline"
+            className="!border-white/70 !text-white hover:!bg-white/10 flex-1 sm:flex-none"
+          >
+            <IconClock className="w-4 h-4" /> Past / izo wakoreye
+          </Button>
+        </div>
       </div>
 
-      <Modal open={modalOpen} onClose={closeModal} title="Start Charging / Tangira Gusharija">
+      <Modal
+        open={modalOpen}
+        onClose={closeModal}
+        title={manualMode ? "Add Past Session / Ongeramo izo wakoreye." : "Start Charging / Tangira Gusharija"}
+      >
         <div className="space-y-4">
+          {/* Mode toggle — flip a live start into a full manual/past entry. */}
+          <label className="flex items-start gap-2 cursor-pointer select-none text-sm text-gray-700 bg-gray-50 rounded-xl p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 w-4 h-4 accent-green-600 shrink-0"
+              checked={manualMode}
+              onChange={e => setManualMode(e.target.checked)}
+            />
+            <span>
+              Add a past session / Ongeramo izo wakoreye.
+              <span className="block text-xs text-gray-400">
+                Record a charge that already finished — with its kWh and times.
+              </span>
+            </span>
+          </label>
+
           {/* ── Step 1: the car ────────────────────────────────────── */}
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">1 · Car / Imodoka</p>
           <div>
@@ -273,25 +352,72 @@ export const StaffSessionsPage: React.FC = () => {
             )}
           </div>
 
-          {/* ── Step 3: battery + start ────────────────────────────── */}
+          {/* ── Step 3: battery (+ finished-charge details in manual mode) ── */}
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider pt-2">3 · Battery / Batiri</p>
-          <Input
-            label="Battery now (%) / Batiri ubu"
-            type="number"
-            min={0}
-            max={100}
-            placeholder="urugero: 20"
-            value={startPctInput}
-            onChange={e => setStartPctInput(e.target.value)}
-          />
+          <div className={manualMode ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : ""}>
+            <Input
+              label={manualMode ? "Start battery (%) / Batiri itangira" : "Battery now (%) / Batiri ubu"}
+              type="number"
+              min={0}
+              max={100}
+              placeholder="urugero: 20"
+              value={startPctInput}
+              onChange={e => setStartPctInput(e.target.value)}
+            />
+            {manualMode && (
+              <Input
+                label="End battery (%) / Batiri iherezo"
+                type="number"
+                min={0}
+                max={100}
+                placeholder="urugero: 90"
+                value={manualEndPct}
+                onChange={e => setManualEndPct(e.target.value)}
+              />
+            )}
+          </div>
+
+          {manualMode && (
+            <>
+              <Input
+                label="kW used / kW zakoreshejwe"
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="urugero: 50"
+                value={manualWatt}
+                onChange={e => setManualWatt(e.target.value)}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label="Started / Yatangiye (si ngombwa)"
+                  type="datetime-local"
+                  value={manualStartedAt}
+                  onChange={e => setManualStartedAt(e.target.value)}
+                />
+                <Input
+                  label="Ended / Yarangiye (si ngombwa)"
+                  type="datetime-local"
+                  value={manualEndedAt}
+                  onChange={e => setManualEndedAt(e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
           <Button
             className="w-full py-3"
-            onClick={handleStart}
-            disabled={!selectedCar || !chargerId || !startPctInput || starting}
+            onClick={manualMode ? handleAddManual : handleStart}
+            disabled={
+              manualMode
+                ? !selectedCar || !chargerId || !startPctInput || !manualEndPct || !manualWatt || addingManual
+                : !selectedCar || !chargerId || !startPctInput || starting
+            }
           >
             <IconBolt className="w-4 h-4" />
-            {starting ? "Tegereza..." : "Start / Tangira"}
+            {manualMode
+              ? (addingManual ? "Tegereza..." : "Add / Ongeraho")
+              : (starting ? "Tegereza..." : "Start / Tangira")}
           </Button>
         </div>
       </Modal>
