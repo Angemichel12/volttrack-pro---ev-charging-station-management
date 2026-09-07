@@ -1,12 +1,13 @@
-import { useState, useCallback } from "react";
-import { errorToast } from "@/utils/toast";
+import { useState, useCallback, useRef } from "react";
+import { successToast, errorToast } from "@/utils/toast";
 import api from "@/utils/axios";
-import { safeArray } from "@/utils/safeArray";
-import type { PortSide } from "./useStaff";
+import { unwrapPage, emptyPageMeta, type PageMeta } from "@/utils/pagination";
+import type { PortSide, Session, SessionUpdatePayload } from "./useStaff";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface SessionReportRow {
+  id: number; // session id — used to edit the row via PATCH /api/sessions/<id>/update/
   shift_id: number;
   staff_name: string;
   station_name: string;
@@ -89,86 +90,83 @@ const downloadFile = async (path: string, params: Record<string, string>, filena
   }
 };
 
-// ─── useSessionReport ─────────────────────────────────────────────────────────
-
-export const useSessionReport = () => {
-  const [rows, setRows] = useState<SessionReportRow[]>([]);
+// A paginated report hook: `fetchReport(filters, page)` loads one page, and the
+// returned `meta` carries page/total_pages/count for a <Pagination> control. The
+// JSON report endpoints are now paginated the same way as the other lists; the
+// `/excel/` and `/pdf/` twins still stream the complete, unpaginated data set.
+const useReportList = <T>(path: string, exportName: string, errorMsg: string) => {
+  const [rows, setRows] = useState<T[]>([]);
+  const [meta, setMeta] = useState<PageMeta>(emptyPageMeta);
   const [loading, setLoading] = useState(false);
+  // Remember the last query so a caller (e.g. after an edit) can refetch the
+  // exact same page without re-threading filters through.
+  const last = useRef<{ filters: ReportFilters; page: number }>({ filters: {}, page: 1 });
 
-  const fetchReport = useCallback(async (filters: ReportFilters) => {
+  const fetchReport = useCallback(async (filters: ReportFilters, page: number = 1) => {
+    last.current = { filters, page };
     setLoading(true);
     try {
-      const res = await api.get("api/reports/sessions/", { params: buildParams(filters) });
-      setRows(safeArray<SessionReportRow>(res.data?.data));
+      const res = await api.get(path, { params: { ...buildParams(filters), page: String(page) } });
+      const pg = unwrapPage<T>(res.data?.data);
+      setRows(pg.results);
+      setMeta(pg);
     } catch {
-      errorToast("Failed to load session report");
+      errorToast(errorMsg);
       setRows([]);
+      setMeta(emptyPageMeta);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [path, errorMsg]);
+
+  const refetch = useCallback(
+    () => fetchReport(last.current.filters, last.current.page),
+    [fetchReport]
+  );
 
   const downloadExcel = (filters: ReportFilters) =>
-    downloadFile("api/reports/sessions/excel/", buildParams(filters), "sessions-report.xlsx");
-
+    downloadFile(`${path}excel/`, buildParams(filters), `${exportName}.xlsx`);
   const downloadPdf = (filters: ReportFilters) =>
-    downloadFile("api/reports/sessions/pdf/", buildParams(filters), "sessions-report.pdf");
+    downloadFile(`${path}pdf/`, buildParams(filters), `${exportName}.pdf`);
 
-  return { rows, loading, fetchReport, downloadExcel, downloadPdf };
+  return { rows, meta, loading, fetchReport, refetch, downloadExcel, downloadPdf };
+};
+
+// ─── useSessionReport ─────────────────────────────────────────────────────────
+
+export const useSessionReport = () => {
+  const base = useReportList<SessionReportRow>(
+    "api/reports/sessions/",
+    "sessions-report",
+    "Failed to load session report"
+  );
+
+  // Edit a session straight from the report (admin: any; staff: own only), then
+  // refetch the current page so the recomputed row (price/kW/duration) shows.
+  const updateSession = async (
+    session_id: number,
+    payload: SessionUpdatePayload
+  ): Promise<Session | null> => {
+    try {
+      const res = await api.patch(`api/sessions/${session_id}/update/`, payload);
+      await base.refetch();
+      successToast("Session updated / Byahinduwe");
+      return (res.data.data as Session) ?? null;
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to update session / Byanze");
+      return null;
+    }
+  };
+
+  return { ...base, updateSession };
 };
 
 // ─── useShiftReport ───────────────────────────────────────────────────────────
 
-export const useShiftReport = () => {
-  const [rows, setRows] = useState<ShiftReportRow[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const fetchReport = useCallback(async (filters: ReportFilters) => {
-    setLoading(true);
-    try {
-      const res = await api.get("api/reports/shifts/", { params: buildParams(filters) });
-      setRows(safeArray<ShiftReportRow>(res.data?.data));
-    } catch {
-      errorToast("Failed to load shift report");
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const downloadExcel = (filters: ReportFilters) =>
-    downloadFile("api/reports/shifts/excel/", buildParams(filters), "shifts-report.xlsx");
-
-  const downloadPdf = (filters: ReportFilters) =>
-    downloadFile("api/reports/shifts/pdf/", buildParams(filters), "shifts-report.pdf");
-
-  return { rows, loading, fetchReport, downloadExcel, downloadPdf };
-};
+export const useShiftReport = () =>
+  useReportList<ShiftReportRow>("api/reports/shifts/", "shifts-report", "Failed to load shift report");
 
 // ─── useCarReport (admin only — per-car charging & payment summary) ────────────
 
-export const useCarReport = () => {
-  const [rows, setRows] = useState<CarReportRow[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const fetchReport = useCallback(async (filters: ReportFilters) => {
-    setLoading(true);
-    try {
-      const res = await api.get("api/reports/cars/", { params: buildParams(filters) });
-      setRows(safeArray<CarReportRow>(res.data?.data));
-    } catch {
-      errorToast("Failed to load car report");
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const downloadExcel = (filters: ReportFilters) =>
-    downloadFile("api/reports/cars/excel/", buildParams(filters), "cars-report.xlsx");
-
-  const downloadPdf = (filters: ReportFilters) =>
-    downloadFile("api/reports/cars/pdf/", buildParams(filters), "cars-report.pdf");
-
-  return { rows, loading, fetchReport, downloadExcel, downloadPdf };
-};
+export const useCarReport = () =>
+  useReportList<CarReportRow>("api/reports/cars/", "cars-report", "Failed to load car report");

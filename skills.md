@@ -41,7 +41,9 @@ All list endpoints are paginated (cars, users, stations, chargers, shift history
 
 Query params (all lists): `page` (1-based, default 1) and `page_size` (default 20, max 200). `limit` is accepted as an alias for `page_size`. Other filters (e.g. `role`, `station`, `date_from`) still apply and combine with pagination.
 
-Picker/autocomplete endpoints are **not** paginated — they return a bare array and cap results server-side: the type-ahead `search-car/`, the `cars/owners/` autocomplete, the station list (`GET /api/stations/`, feeds the shift-open dropdown), and the staff station-chargers view. Reports and dashboard endpoints are also not paginated (they return aggregates / export-parity rows).
+The report **JSON list** endpoints are paginated the same way: `GET /api/reports/sessions/`, `/shifts/`, `/expenses/`, and `/cars/` (per-car summary). Their existing filters combine with `page`/`page_size`. Their `/excel/` and `/pdf/` export variants are **not** paginated — they always stream the complete data set. To edit a session shown in the sessions report, call `PATCH /api/sessions/<id>/update/` (admin: any session; staff: own only) using the `id` returned on each row.
+
+Picker/autocomplete endpoints are **not** paginated — they return a bare array and cap results server-side: the type-ahead `search-car/`, the `cars/owners/` autocomplete, the station list (`GET /api/stations/`, feeds the shift-open dropdown), and the staff station-chargers view. The dashboard endpoints are also not paginated (they return aggregates).
 
 ## Roles
 

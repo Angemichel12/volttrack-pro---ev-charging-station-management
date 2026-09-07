@@ -1,11 +1,11 @@
 import React, { useEffect, useId, useState } from "react";
-import { Card, Button, Input, Select, Badge, TableSkeleton } from "../components/Shared";
-import { IconExport } from "../components/Icons";
-import { rwf, kw } from "../utils/format";
-import { useStations } from "../hooks/useStaff";
+import { Card, Button, Input, Select, Badge, TableSkeleton, Pagination, Modal } from "../components/Shared";
+import { IconExport, IconPencil, IconCheck } from "../components/Icons";
+import { rwf, kw, toDateTimeLocal, fromDateTimeLocal } from "../utils/format";
+import { useStations, type SessionUpdatePayload } from "../hooks/useStaff";
 import { type Employee } from "../hooks/useAdmin";
 import { useCarOwners } from "../hooks/useCars";
-import { useSessionReport, useShiftReport, useCarReport, type ReportFilters } from "../hooks/useReports";
+import { useSessionReport, useShiftReport, useCarReport, type ReportFilters, type SessionReportRow } from "../hooks/useReports";
 
 // Car-owner filter: a text input backed by a <datalist> type-ahead. Names are
 // fetched from /api/cars/owners/ as the user types; picking one passes the exact
@@ -36,6 +36,16 @@ const OwnerFilter: React.FC<{ value: string; onChange: (v: string) => void }> = 
     </>
   );
 };
+
+// Blank form for the edit-session modal (all as strings for the inputs).
+// Port is omitted — the app auto-assigns it, same as the History edit form.
+interface EditForm {
+  started_at: string;
+  ended_at: string;
+  starting_car_percentage: string;
+  ending_car_percentage: string;
+  watt_consumed: string;
+}
 
 // Embeddable detailed-report panel: data loads automatically as filters change,
 // and the same filtered slice can be downloaded as Excel or PDF.
@@ -68,17 +78,53 @@ export const ReportPanel: React.FC<{
 
   const active = type === "sessions" ? sessionReport : shiftReport;
 
-  // Auto-load: fetch on mount and whenever a filter changes (debounced so
-  // typing a charger/shift id doesn't fire a request per keystroke).
+  // Auto-load: fetch page 1 on mount and whenever a filter (or the report type)
+  // changes — debounced so typing a charger/shift id doesn't fire per keystroke.
+  // Changing a filter always resets to the first page.
   useEffect(() => {
     const timeout = setTimeout(() => {
-      active.fetchReport(buildFilters());
+      active.fetchReport(buildFilters(), 1);
     }, 350);
     return () => clearTimeout(timeout);
   }, [type, staffId, stationId, chargerId, shiftId, owner, dateFrom, dateTo]);
 
+  const changePage = (p: number) => active.fetchReport(buildFilters(), p);
+
   const handleExcel = () => active.downloadExcel(buildFilters());
   const handlePdf = () => active.downloadPdf(buildFilters());
+
+  // ── Edit-session modal (sessions report only) ──────────────────────────────
+  const [editing, setEditing] = useState<SessionReportRow | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const openEdit = (r: SessionReportRow) => {
+    setEditing(r);
+    setEditForm({
+      started_at: toDateTimeLocal(r.started_at),
+      ended_at: toDateTimeLocal(r.ended_at),
+      starting_car_percentage: r.starting_car_percentage != null ? String(r.starting_car_percentage) : "",
+      ending_car_percentage: r.ending_car_percentage != null ? String(r.ending_car_percentage) : "",
+      watt_consumed: r.watt_consumed ?? "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editing || !editForm) return;
+    // Only send fields that carry a value — the API changes just what it receives.
+    const payload: SessionUpdatePayload = {};
+    const startIso = fromDateTimeLocal(editForm.started_at);
+    if (startIso) payload.started_at = startIso;
+    const endIso = fromDateTimeLocal(editForm.ended_at);
+    if (endIso) payload.ended_at = endIso;
+    if (editForm.starting_car_percentage !== "") payload.starting_car_percentage = parseFloat(editForm.starting_car_percentage);
+    if (editForm.ending_car_percentage !== "") payload.ending_car_percentage = parseFloat(editForm.ending_car_percentage);
+    if (editForm.watt_consumed !== "") payload.watt_consumed = editForm.watt_consumed;
+    setSavingEdit(true);
+    const updated = await sessionReport.updateSession(editing.id, payload);
+    setSavingEdit(false);
+    if (updated) { setEditing(null); setEditForm(null); }
+  };
 
   return (
     <div className="space-y-4">
@@ -167,18 +213,19 @@ export const ReportPanel: React.FC<{
                   <th className="pb-3 px-2">Paid / Yishyuye</th>
                   <th className="pb-3 px-2">Start / Itangira</th>
                   <th className="pb-3 px-2">End / Iherezo</th>
+                  <th className="pb-3 px-2"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {sessionReport.rows.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="text-center py-8 text-gray-400">
+                    <td colSpan={11} className="text-center py-8 text-gray-400">
                       {sessionReport.loading ? "Tegereza..." : "No data / Nta makuru"}
                     </td>
                   </tr>
                 )}
-                {sessionReport.rows.map((r, i) => (
-                  <tr key={i} className="text-sm">
+                {sessionReport.rows.map(r => (
+                  <tr key={r.id} className="text-sm">
                     <td className="py-3 px-2 font-medium">{r.staff_name}</td>
                     <td className="py-3 px-2 text-gray-500">{r.station_name}</td>
                     <td className="py-3 px-2 text-gray-500">{r.charger_name}</td>
@@ -206,11 +253,28 @@ export const ReportPanel: React.FC<{
                     <td className="py-3 px-2 text-gray-400 text-xs">
                       {r.ended_at ? new Date(r.ended_at).toLocaleString() : "—"}
                     </td>
+                    <td className="py-3 px-2 text-right">
+                      <button
+                        onClick={() => openEdit(r)}
+                        aria-label="Edit session"
+                        title="Edit / Hindura"
+                        className="p-1.5 text-gray-400 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                      >
+                        <IconPencil className="w-4 h-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={sessionReport.meta.page}
+            totalPages={sessionReport.meta.total_pages}
+            count={sessionReport.meta.count}
+            loading={sessionReport.loading}
+            onPageChange={changePage}
+          />
         </Card>
       ) : (
         <Card>
@@ -265,10 +329,75 @@ export const ReportPanel: React.FC<{
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={shiftReport.meta.page}
+            totalPages={shiftReport.meta.total_pages}
+            count={shiftReport.meta.count}
+            loading={shiftReport.loading}
+            onPageChange={changePage}
+          />
         </Card>
       )}
       </div>
       )}
+
+      {/* ── Edit session modal (sessions report) ──────────────────────── */}
+      <Modal
+        open={editing !== null}
+        onClose={() => { setEditing(null); setEditForm(null); }}
+        title={editing ? `Edit / Hindura · ${editing.car_plate}` : ""}
+      >
+        {editForm && (
+          <div className="space-y-4">
+            <p className="text-xs text-gray-400">
+              Leave a field as-is to keep it. Price is recalculated automatically. /
+              Usiga uko kimeze ntikihinduka. Igiciro kibarwa nyuma.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Started / Yatangiye"
+                type="datetime-local"
+                value={editForm.started_at}
+                onChange={e => setEditForm({ ...editForm, started_at: e.target.value })}
+              />
+              <Input
+                label="Ended / Yarangiye"
+                type="datetime-local"
+                value={editForm.ended_at}
+                onChange={e => setEditForm({ ...editForm, ended_at: e.target.value })}
+              />
+              <Input
+                label="Start battery (%) / Batiri itangira"
+                type="number"
+                min={0}
+                max={100}
+                value={editForm.starting_car_percentage}
+                onChange={e => setEditForm({ ...editForm, starting_car_percentage: e.target.value })}
+              />
+              <Input
+                label="End battery (%) / Batiri iherezo"
+                type="number"
+                min={0}
+                max={100}
+                value={editForm.ending_car_percentage}
+                onChange={e => setEditForm({ ...editForm, ending_car_percentage: e.target.value })}
+              />
+              <Input
+                label="kW used / kW zakoreshejwe"
+                type="number"
+                min={0}
+                step="0.01"
+                value={editForm.watt_consumed}
+                onChange={e => setEditForm({ ...editForm, watt_consumed: e.target.value })}
+              />
+            </div>
+            <Button className="w-full py-3" onClick={handleSaveEdit} disabled={savingEdit}>
+              <IconCheck className="w-4 h-4" />
+              {savingEdit ? "Tegereza..." : "Save / Bika"}
+            </Button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
@@ -277,7 +406,7 @@ export const ReportPanel: React.FC<{
 // Admin-only report; ordered server-side by outstanding balance (highest first).
 export const CarReportPanel: React.FC = () => {
   const { stations } = useStations();
-  const { rows, loading, fetchReport, downloadExcel, downloadPdf } = useCarReport();
+  const { rows, meta, loading, fetchReport, downloadExcel, downloadPdf } = useCarReport();
 
   const [stationId, setStationId] = useState("");
   const [postpaid, setPostpaid] = useState<"" | "true" | "false">("");
@@ -293,11 +422,15 @@ export const CarReportPanel: React.FC = () => {
     date_to: dateTo || undefined,
   });
 
+  // Filter changes reset to page 1; the pagination control jumps to any page.
   useEffect(() => {
-    const timeout = setTimeout(() => fetchReport(buildFilters()), 350);
+    const timeout = setTimeout(() => fetchReport(buildFilters(), 1), 350);
     return () => clearTimeout(timeout);
   }, [stationId, postpaid, owner, dateFrom, dateTo]);
 
+  const changePage = (p: number) => fetchReport(buildFilters(), p);
+
+  // Note: this total sums the current page only, since the list is paginated.
   const totalOutstanding = rows.reduce((sum, r) => sum + parseFloat(r.outstanding || "0"), 0);
 
   return (
@@ -383,7 +516,11 @@ export const CarReportPanel: React.FC = () => {
                 {rows.length > 0 && (
                   <tfoot className="border-t-2 border-gray-200">
                     <tr className="text-sm font-bold">
-                      <td className="pt-3 px-2" colSpan={6}>Total outstanding / Umwenda wose</td>
+                      <td className="pt-3 px-2" colSpan={6}>
+                        {meta.total_pages > 1
+                          ? "Outstanding (this page) / Umwenda (uru rupapuro)"
+                          : "Total outstanding / Umwenda wose"}
+                      </td>
                       <td className={`pt-3 px-2 ${totalOutstanding > 0 ? "text-red-600" : "text-gray-400"}`}>
                         {rwf(totalOutstanding)}
                       </td>
@@ -392,6 +529,13 @@ export const CarReportPanel: React.FC = () => {
                 )}
               </table>
             </div>
+            <Pagination
+              page={meta.page}
+              totalPages={meta.total_pages}
+              count={meta.count}
+              loading={loading}
+              onPageChange={changePage}
+            />
           </Card>
         </div>
       )}
