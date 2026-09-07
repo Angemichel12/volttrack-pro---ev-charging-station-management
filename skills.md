@@ -87,6 +87,7 @@ Picker/autocomplete endpoints are **not** paginated — they return a bare array
 | POST | `login/` | `phone_number, password` | Returns user + `access`/`refresh`. |
 | POST | `refresh/` | `refresh` | Returns new `access`/`refresh`. |
 | POST | `logout/` | `refresh` | **Auth required.** Blacklists the refresh token. Blocked (400) if staff has an open shift. |
+| POST | `change-password/` | `new_password, confirm_password` | **Auth required.** The logged-in user (any role) changes their own password. `new_password` min 8 chars; must equal `confirm_password` or returns `{"confirm_password": ["Passwords do not match."]}`. Distinct from the admin-only `POST /api/admin/users/<id>/reset-password/`, which resets *another* user's password. |
 
 ### Admin — `/api/admin/` (IsAdmin only)
 

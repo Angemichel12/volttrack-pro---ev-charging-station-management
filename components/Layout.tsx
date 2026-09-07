@@ -1,11 +1,60 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Modal, PasswordInput, Button } from './Shared';
+import { useChangePassword } from '../hooks/useLogin';
 import {
   IconDashboard, IconStation, IconUsers, IconCar, IconCharger, IconChart,
   IconWallet, IconHistory, IconLogout, IconMenu, IconClose, IconMore,
-  IconShift, IconBolt,
+  IconShift, IconBolt, IconKey, IconCheck,
 } from './Icons';
+
+// ── Change-password modal for the logged-in user (any role) ──────────────────
+const ChangePasswordModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+  const { changePassword, loading } = useChangePassword();
+  const [newPassword, setNewPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+
+  const tooShort = newPassword.length > 0 && newPassword.length < 8;
+  const mismatch = confirm.length > 0 && confirm !== newPassword;
+  const valid = newPassword.length >= 8 && confirm === newPassword;
+
+  const reset = () => { setNewPassword(''); setConfirm(''); };
+  const close = () => { reset(); onClose(); };
+
+  const handleSave = async () => {
+    if (!valid) return;
+    const ok = await changePassword(newPassword, confirm);
+    if (ok) close();
+  };
+
+  return (
+    <Modal open={open} onClose={close} title="Change password / Hindura ijambobanga">
+      <div className="space-y-4">
+        <p className="text-xs text-gray-400">
+          Set a new password for your account (min 8 characters). /
+          Shyiraho ijambobanga rishya (nibura inyuguti 8).
+        </p>
+        <PasswordInput
+          label="New password / Ijambobanga rishya"
+          value={newPassword}
+          onChange={e => setNewPassword(e.target.value)}
+          hint={tooShort ? 'Too short / Rigufi cyane (8+)' : undefined}
+        />
+        <PasswordInput
+          label="Confirm password / Emeza ijambobanga"
+          value={confirm}
+          onChange={e => setConfirm(e.target.value)}
+          hint={mismatch ? "Passwords don't match / Ntabwo bihura" : undefined}
+        />
+        <Button className="w-full py-3" onClick={handleSave} disabled={loading || !valid}>
+          <IconCheck className="w-4 h-4" />
+          {loading ? 'Tegereza...' : 'Change / Hindura'}
+        </Button>
+      </div>
+    </Modal>
+  );
+};
 
 interface NavItem {
   label: string;
@@ -41,8 +90,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [changePwOpen, setChangePwOpen] = useState(false);
 
   if (!user) return null;
+
+  const openChangePw = () => { setChangePwOpen(true); setMobileMenuOpen(false); };
 
   const navItems = NAV_ITEMS[user.role] ?? [];
   const bottomNavItems = navItems.slice(0, 4);
@@ -86,8 +138,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <p className="text-xs text-gray-400 truncate">{user.phone_number}</p>
           </div>
           <button
+            onClick={openChangePw}
+            className="mt-1 w-full flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 rounded-xl transition-colors"
+          >
+            <IconKey className="w-5 h-5" /> Change password / Hindura
+          </button>
+          <button
             onClick={logout}
-            className="mt-1 w-full flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
           >
             <IconLogout className="w-5 h-5" /> Logout / Sohoka
           </button>
@@ -142,6 +200,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <p className="text-sm font-semibold text-gray-900">{user.name}</p>
             <p className="text-xs text-gray-400 mb-4">{user.phone_number}</p>
             <button
+              onClick={openChangePw}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 text-base font-bold text-gray-700 bg-gray-100 rounded-2xl mb-3"
+            >
+              <IconKey className="w-5 h-5" /> Change password / Hindura
+            </button>
+            <button
               onClick={logout}
               className="w-full flex items-center justify-center gap-2 px-4 py-3.5 text-base font-bold text-red-600 bg-red-50 rounded-2xl"
             >
@@ -183,6 +247,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <span className="text-[9px] font-semibold leading-tight text-center px-0.5">More / Ibindi</span>
         </button>
       </nav>
+
+      {/* ── Change password modal ───────────────────────────────── */}
+      <ChangePasswordModal open={changePwOpen} onClose={() => setChangePwOpen(false)} />
 
     </div>
   );

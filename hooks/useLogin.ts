@@ -23,6 +23,33 @@ interface LoginResponse {
   };
 }
 
+// The logged-in user (any role) changes their own password.
+// POST /api/auth/change-password/ — { new_password, confirm_password }, auth required.
+export const useChangePassword = () => {
+  const [loading, setLoading] = useState(false);
+
+  const changePassword = async (new_password: string, confirm_password: string): Promise<boolean> => {
+    setLoading(true);
+    try {
+      await api.post("api/auth/change-password/", { new_password, confirm_password });
+      successToast("Password changed / Ijambobanga ryahinduwe");
+      return true;
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      // Surface the first field error (e.g. "Passwords do not match.") if present.
+      const fieldError = errors && typeof errors === "object"
+        ? (Object.values(errors)[0] as string[] | undefined)?.[0]
+        : undefined;
+      errorToast(fieldError || error?.response?.data?.message || "Failed to change password / Byanze");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { changePassword, loading };
+};
+
 export const useLogin = () => {
   const navigate = useNavigate();
   const { setUser } = useAuth();
