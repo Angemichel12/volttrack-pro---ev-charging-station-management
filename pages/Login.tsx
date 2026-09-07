@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Input } from "../components/Shared";
+import { Button, Input, PasswordInput } from "../components/Shared";
 import { useLogin } from "../hooks/useLogin";
 
 export const Login: React.FC = () => {
@@ -38,9 +38,8 @@ export const Login: React.FC = () => {
               autoFocus
               required
             />
-            <Input
+            <PasswordInput
               label="Password / Ijambobanga"
-              type="password"
               placeholder="Ijambobanga"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

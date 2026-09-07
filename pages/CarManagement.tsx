@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card, Button, Input, Badge, Modal, PageHeader, TableSkeleton, Loading, Pagination } from "../components/Shared";
-import { IconPlus, IconTrash, IconWallet, IconCheck } from "../components/Icons";
+import { IconPlus, IconTrash, IconWallet, IconCheck, IconPencil } from "../components/Icons";
 import { useAuth } from "../context/AuthContext";
 import { useCars, type CarPayload, type Car, type CarBalanceResponse } from "../hooks/useCars";
 import { rwf } from "../utils/format";
@@ -21,6 +21,13 @@ export const CarManagement: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<CarPayload>(emptyForm);
   const [priceInputs, setPriceInputs] = useState<{ [id: number]: string }>({});
+
+  // ── Edit-car modal ────────────────────────────────────────────────────────
+  // Staff may only change plate/owner/phone (backend ignores anything else);
+  // admins also get the Notes field. Price & billing stay on the inline controls.
+  const [editing, setEditing] = useState<Car | null>(null);
+  const [editForm, setEditForm] = useState<CarPayload>(emptyForm);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // ── Balance / pay-later modal ─────────────────────────────────────────────
   const [balanceCar, setBalanceCar] = useState<Car | null>(null);
@@ -58,6 +65,31 @@ export const CarManagement: React.FC = () => {
 
   // Flip a car between prepaid (settled at charge time) and postpaid (pay-later debt).
   const togglePostpaid = (car: Car) => updateCar(car.id, { is_postpaid: !car.is_postpaid });
+
+  const openEdit = (car: Car) => {
+    setEditing(car);
+    setEditForm({
+      plate_number: car.plate_number,
+      owner_name: car.owner_name ?? "",
+      phone_number: car.phone_number ?? "",
+      optional_info: car.optional_info ?? "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editing || !editForm.plate_number.trim()) return;
+    // Send only the fields the caller's role is allowed to change.
+    const payload: Partial<CarPayload> = {
+      plate_number: editForm.plate_number.trim().toUpperCase(),
+      owner_name: editForm.owner_name || undefined,
+      phone_number: editForm.phone_number || undefined,
+      ...(isAdmin ? { optional_info: editForm.optional_info || undefined } : {}),
+    };
+    setSavingEdit(true);
+    const ok = await updateCar(editing.id, payload);
+    setSavingEdit(false);
+    if (ok) setEditing(null);
+  };
 
   const openBalance = async (car: Car) => {
     setBalanceCar(car);
@@ -159,7 +191,7 @@ export const CarManagement: React.FC = () => {
       )}
 
       {loading ? (
-        <Card><TableSkeleton rows={6} cols={isAdmin ? 7 : 4} /></Card>
+        <Card><TableSkeleton rows={6} cols={isAdmin ? 7 : 5} /></Card>
       ) : (
         <Card>
           <div className="overflow-x-auto">
@@ -172,7 +204,7 @@ export const CarManagement: React.FC = () => {
                   <th className="pb-3 px-2">Notes / Ibindi</th>
                   {isAdmin && <th className="pb-3 px-2">Billing / Ubwishyu</th>}
                   {isAdmin && <th className="pb-3 px-2">Price/kW (Rwf)</th>}
-                  {isAdmin && <th className="pb-3 px-2"></th>}
+                  <th className="pb-3 px-2"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -216,32 +248,42 @@ export const CarManagement: React.FC = () => {
                         </div>
                       </td>
                     )}
-                    {isAdmin && (
-                      <td className="py-3 px-2">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => openBalance(c)}
-                            aria-label="View balance"
-                            title="Balance / Ideni"
-                            className="p-1.5 text-gray-400 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
-                          >
-                            <IconWallet className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteCar(c.id)}
-                            aria-label="Remove car"
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <IconTrash className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    )}
+                    <td className="py-3 px-2">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => openEdit(c)}
+                          aria-label="Edit car"
+                          title="Edit / Hindura"
+                          className="p-1.5 text-gray-400 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                        >
+                          <IconPencil className="w-4 h-4" />
+                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => openBalance(c)}
+                              aria-label="View balance"
+                              title="Balance / Ideni"
+                              className="p-1.5 text-gray-400 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                            >
+                              <IconWallet className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteCar(c.id)}
+                              aria-label="Remove car"
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <IconTrash className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 {cars.length === 0 && (
                   <tr>
-                    <td colSpan={isAdmin ? 7 : 4} className="text-center py-8 text-gray-400">
+                    <td colSpan={isAdmin ? 7 : 5} className="text-center py-8 text-gray-400">
                       No cars / Nta modoka
                     </td>
                   </tr>
@@ -258,6 +300,43 @@ export const CarManagement: React.FC = () => {
           />
         </Card>
       )}
+
+      {/* ── Edit car modal (staff: plate/owner/phone · admin: + notes) ────── */}
+      <Modal
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        title={editing ? `Edit / Hindura · ${editing.plate_number}` : ""}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Plate Number / Plaque"
+            placeholder="ABC-123"
+            value={editForm.plate_number}
+            onChange={e => setEditForm({ ...editForm, plate_number: e.target.value })}
+          />
+          <Input
+            label="Owner / Nyir'imodoka (si ngombwa)"
+            value={editForm.owner_name}
+            onChange={e => setEditForm({ ...editForm, owner_name: e.target.value })}
+          />
+          <Input
+            label="Phone / Telephone (si ngombwa)"
+            value={editForm.phone_number}
+            onChange={e => setEditForm({ ...editForm, phone_number: e.target.value })}
+          />
+          {isAdmin && (
+            <Input
+              label="Notes / Ibindi (si ngombwa)"
+              value={editForm.optional_info}
+              onChange={e => setEditForm({ ...editForm, optional_info: e.target.value })}
+            />
+          )}
+          <Button className="w-full py-3" onClick={handleSaveEdit} disabled={savingEdit || !editForm.plate_number.trim()}>
+            <IconCheck className="w-4 h-4" />
+            {savingEdit ? "Tegereza..." : "Save / Bika"}
+          </Button>
+        </div>
+      </Modal>
 
       {/* ── Balance / pay-later settlement modal (admin) ──────────────────── */}
       <Modal

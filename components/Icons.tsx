@@ -201,3 +201,26 @@ export const IconShift: React.FC<IconProps> = ({ className }) => (
     <path d="M12 8.5V12l2.5 1.5" />
   </svg>
 );
+
+export const IconEye: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)}>
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+export const IconEyeOff: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)}>
+    <path d="M9.9 5.1A9.7 9.7 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1" />
+    <path d="M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4-.85" />
+    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    <path d="M3 3l18 18" />
+  </svg>
+);
+
+export const IconKey: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)}>
+    <circle cx="7.5" cy="15.5" r="4.5" />
+    <path d="M10.7 12.3L21 2M17 6l2 2M14 9l2 2" />
+  </svg>
+);

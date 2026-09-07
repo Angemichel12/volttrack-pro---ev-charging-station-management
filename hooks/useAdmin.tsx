@@ -18,11 +18,13 @@ export interface StationPayload {
   price_per_watt?: string | null;
 }
 
+export type UserRole = "admin" | "manager" | "staff";
+
 export interface Employee {
   id: number;
   name: string;
   phone_number: string;
-  role: "staff";
+  role: UserRole;
   is_active: boolean;
   created_at: string;
 }
@@ -32,6 +34,14 @@ export interface EmployeePayload {
   phone_number: string;
   password: string;
   role: "staff";
+}
+
+// PATCH /api/admin/users/<pk>/ — password is NOT editable here (use resetPassword).
+export interface EmployeeUpdatePayload {
+  name?: string;
+  phone_number?: string;
+  role?: UserRole;
+  is_active?: boolean;
 }
 
 export type PortSide = "left" | "right";
@@ -52,6 +62,12 @@ export interface Charger {
 export interface ChargerPayload {
   name: string;
   station: number;
+}
+
+// PATCH /api/chargers/<pk>/ — both fields optional.
+export interface ChargerUpdatePayload {
+  name?: string;
+  station?: number;
 }
 
 export interface AdminReport {
@@ -176,7 +192,7 @@ export const useAdminEmployees = () => {
     }
   };
 
-  const updateEmployee = async (id: number, payload: Partial<EmployeePayload>) => {
+  const updateEmployee = async (id: number, payload: EmployeeUpdatePayload) => {
     try {
       const res = await api.patch(`api/admin/users/${id}/`, payload);
       setEmployees(prev => prev.map(e => e.id === id ? res.data.data : e));
@@ -184,6 +200,19 @@ export const useAdminEmployees = () => {
       return true;
     } catch (e: any) {
       errorToast(e?.response?.data?.message || "Failed to update employee");
+      return false;
+    }
+  };
+
+  // Admin-only password reset for any user. The API hashes it server-side and
+  // never echoes it back, so there's nothing to store locally.
+  const resetPassword = async (id: number, new_password: string): Promise<boolean> => {
+    try {
+      await api.post(`api/admin/users/${id}/reset-password/`, { new_password });
+      successToast("Password reset / Ijambobanga ryahinduwe");
+      return true;
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to reset password");
       return false;
     }
   };
@@ -209,6 +238,7 @@ export const useAdminEmployees = () => {
     fetchEmployees,
     createEmployee,
     updateEmployee,
+    resetPassword,
     deleteEmployee,
   };
 };
@@ -250,6 +280,18 @@ export const useAdminChargers = () => {
     }
   };
 
+  const updateCharger = async (id: number, payload: ChargerUpdatePayload): Promise<boolean> => {
+    try {
+      const res = await api.patch(`api/chargers/${id}/`, payload);
+      setChargers(prev => prev.map(c => c.id === id ? res.data.data : c));
+      successToast("Charger updated");
+      return true;
+    } catch (e: any) {
+      errorToast(e?.response?.data?.message || "Failed to update charger");
+      return false;
+    }
+  };
+
   const deleteCharger = async (id: number): Promise<void> => {
     try {
       await api.delete(`api/chargers/${id}/`);
@@ -270,6 +312,7 @@ export const useAdminChargers = () => {
     changePage: fetchChargers,
     fetchChargers,
     createCharger,
+    updateCharger,
     deleteCharger,
   };
 };

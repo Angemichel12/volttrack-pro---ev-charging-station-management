@@ -1,5 +1,5 @@
-import React from "react";
-import { IconClose, IconArrowRight } from "./Icons";
+import React, { useState } from "react";
+import { IconClose, IconArrowRight, IconEye, IconEyeOff } from "./Icons";
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
@@ -105,6 +105,36 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
     {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
   </div>
 );
+
+// Password field with a show/hide toggle. Same look as <Input>; the eye button
+// flips the input between `password` and `text` so users can verify what they typed.
+export const PasswordInput: React.FC<
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & { label?: string; hint?: string }
+> = ({ label, hint, className = "", ...props }) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="w-full">
+      {label && <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>}
+      <div className="relative">
+        <input
+          type={visible ? "text" : "password"}
+          className={`${controlClass} pr-11 ${className}`}
+          {...props}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible(v => !v)}
+          aria-label={visible ? "Hide password" : "Show password"}
+          title={visible ? "Hide / Hisha" : "Show / Erekana"}
+          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          {visible ? <IconEyeOff className="w-5 h-5" /> : <IconEye className="w-5 h-5" />}
+        </button>
+      </div>
+      {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
+    </div>
+  );
+};
 
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string }> = ({
   label,

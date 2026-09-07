@@ -94,8 +94,10 @@ Standard DRF router CRUD (`list/retrieve/create/update/partial_update/destroy`) 
 
 | Resource | Base path | Notable fields |
 |---|---|---|
-| Users | `users/` | Create: `name, phone_number, password, role`. No `station` — staff pick it per shift. |
+| Users | `users/` | Create: `name, phone_number, password, role`. Update (`PATCH users/<pk>/`): `name, phone_number, role, is_active` (no password here). No `station` — staff pick it per shift. |
 | Stations | `stations/` | `name, price_per_watt`. Also `GET stations/reports/` — system-wide earnings/usage across all stations. |
+
+Extra user action: `POST users/<pk>/reset-password/` with `{ "new_password": "..." }` (min 8 chars) — admin-only password reset for any user. Returns a success message; the password is hashed server-side and never echoed back.
 
 Cars moved out of this router — see `/api/cars/` below, shared with staff.
 
@@ -121,6 +123,7 @@ Also exposed as a filterable report under `/api/reports/expenses/` (see Reports 
 |---|---|---|---|
 | GET | `` | any authenticated user | List stations — staff need this to pick a station when opening a shift. |
 | POST | `` | admin | Create a station. |
+| GET | `<pk>/` | admin | Retrieve a single station. |
 | PATCH/DELETE | `<pk>/` | admin | Update/delete a station. |
 | POST | `<pk>/set-price/` | admin | Body: `{ "price_per_watt": ... }`. |
 | GET | `reports/` | admin | System-wide report (earnings, watt used, sessions) — overall and per-station. |
@@ -134,7 +137,9 @@ Also exposed as a filterable report under `/api/reports/expenses/` (see Reports 
 |---|---|---|---|
 | GET | `` | admin: all / staff: own open-shift station | List chargers — each includes `ports: [{port: "left", available: bool}, {port: "right", available: bool}]`. |
 | POST | `` | admin | Create a charger at a station: `{ name, station }`. Always gets a left and a right port, both available. |
-| DELETE | `<pk>/` | admin | Delete a charger. |
+| GET | `<pk>/` | any authenticated user | Retrieve a single charger (same shape as the list rows). |
+| PATCH | `<pk>/` | admin | Update a charger: `{ name?, station? }`. Staff get 403. |
+| DELETE | `<pk>/` | admin | Delete a charger. Staff get 403. |
 | POST | `shifts/open/` | staff | `{ station, start_kwatts_in_cashpower, shift_start?, notes? }`. Fails if staff already has an open shift anywhere. |
 | PATCH | `shifts/<pk>/add-cashpower/` | staff (own open shift) | `{ amount }` — adds to `addition_kwatt_in_cashpower`. |
 | PATCH | `shifts/<pk>/close/` | staff (own open shift) | `{ money_on_momo, end_kwatts_in_cashpower, notes? }` — computes and stores the derived shift totals, records the two staff-entered values, sets `shift_end`. |
@@ -151,7 +156,7 @@ Full CRUD, but the response shape and what you're allowed to set depends on role
 | GET | `` / `<pk>/` | admin or staff | Admin response includes `unique_price` and `is_postpaid`; staff response omits both entirely. |
 | GET | `owners/?search=...` | admin or staff | **Owner type-ahead** for report filtering. Returns distinct, non-blank owner names matching `search` (case-insensitive substring), each with `car_count`: `[{owner_name, car_count}, ...]`, ordered by name. Omitting `search` lists all owners. Pick a name here, then pass it as the `owner` query param to any report (see Reports). |
 | POST | `` | admin or staff | Create a car: `plate_number, owner_name?, phone_number?, optional_info?` (+ `unique_price?`, `is_postpaid?` for admin only — those fields don't exist in the staff request/response schema, so staff can't set or see them even by sending them). |
-| PATCH | `<pk>/` | admin or staff | Same field restriction as create. Admins flip a car to pay-later by `PATCH`-ing `{ "is_postpaid": true }`. |
+| PATCH | `<pk>/` | admin or staff | **Staff may only change `plate_number`, `owner_name`, `phone_number`** — any other field (e.g. `optional_info`, `unique_price`, `is_postpaid`) sent by staff is silently ignored. Admins edit the full record and flip a car to pay-later by `PATCH`-ing `{ "is_postpaid": true }`. |
 | DELETE | `<pk>/` | **admin only** | Staff gets 403. |
 | POST | `<pk>/pay/` | **admin only** | Record a settlement: `{ amount, note? }`. Applies the amount to the car's oldest unpaid sessions first (FIFO); partial amounts allowed. Rejected if `amount` exceeds the outstanding balance. Returns `{ payment, balance }`. |
 | GET | `<pk>/balance/` | **admin only** | Returns `{ balance: { times_charged, total_charged, total_paid, outstanding, times_paid, is_postpaid }, payments: [...] }`. Works for any car (prepaid cars simply show `outstanding: 0`). |
